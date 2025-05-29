@@ -1,0 +1,173 @@
+/* Navbar Container */
+.navbar-container {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: white;
+    height: 4rem;
+    display: flex;
+    align-items: center;
+    
+    justify-content: space-between;
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 0 2rem;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+/* Logo */
+.logo {
+    font-size: 1.5rem;
+    font-weight: bold;
+}
+
+.logo span {
+    color: #6A38C2;
+}
+
+/* Navigation Links */
+.nav-links {
+    display: flex;
+    gap: 1.25rem;
+    text-decoration: none;
+    list-style: none;
+    align-items: center;
+    font-weight: 500;
+    font-size: 0.75rem;
+}
+
+/* Universal link reset inside navbar */
+.navbar-container a {
+    text-decoration: none;
+    color: inherit;
+}
+
+.navbar-container a:hover {
+    color: #6A38C2;
+}
+
+/* Auth Buttons */
+.auth-buttons {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+/* Button overrides */
+.register-btn {
+    background-color: #6A38C2;
+    color: white;
+    border: none;
+    padding: 0.4rem 1rem;
+    border-radius: 6px;
+    font-size: small;
+    cursor: pointer;
+}
+
+.login-btn {
+    padding: 0.4rem 1rem;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    background-color: transparent;
+    font-size: small;
+    cursor: pointer;
+    color: #000;
+}
+
+.login-btn:hover {
+    background-color: #f3f4f6;
+}
+
+.register-btn:hover {
+    background-color: #5729a3;
+}
+
+/* Avatar Trigger */
+/* Avatar Circle Base */
+.avatar-fallback {
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 9999px;
+    cursor: pointer;
+    background: linear-gradient(135deg, #6A38C2, #A855F7);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 1rem;
+    box-shadow: 0 0 0 2px #fff;
+}
+
+/* Larger Avatar inside popover */
+.avatar-large {
+    width: 3rem;
+    height: 3rem;
+    font-size: 1.1rem;
+    margin-right: 0.75rem;
+}
+
+/* Popover Content Styling */
+.popover-content {
+    width: 18rem;
+    padding: 1.25rem;
+    border-radius: 1rem;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15);
+    background-color: white;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+/* Popover Header (User Info) */
+.popover-header {
+    display: flex;
+    align-items: center;
+}
+
+.user-name {
+    padding: 10px;
+
+    font-weight: 600;
+    font-size: 1rem;
+}
+
+.user-bio {
+    font-size: 0.875rem;
+    color: #6b7280;
+}
+
+/* Action items */
+.popover-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.action-item {
+    display: flex;
+    align-items: center;
+    text-decoration: none;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+    color: #4b5563;
+    cursor: pointer;
+}
+
+.logout-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    background-color: #111827;
+    color: white;
+    font-weight: 600;
+    padding: 0.6rem 1rem;
+    border-radius: 0.5rem;
+    border: none;
+    cursor: pointer;
+    font-size: 0.95rem;
+    transition: background-color 0.2s ease;
+}
+
+.logout-btn:hover {
+    background-color: #1f2937;
+}

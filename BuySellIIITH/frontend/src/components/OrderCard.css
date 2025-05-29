@@ -1,0 +1,23 @@
+/* OrderCard.css */
+.order-card {
+  border: 1px solid #e5e7eb; /* Tailwind's border color */
+  padding: 1rem;
+  border-radius: 0.75rem; /* equivalent to rounded-xl */
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05); /* shadow-sm */
+  margin-bottom: 1rem;
+}
+
+.order-title {
+  font-weight: bold;
+  font-size: 1.125rem; /* text-lg */
+  margin-bottom: 0.5rem;
+}
+
+.order-status {
+  margin-bottom: 0.5rem;
+}
+
+.order-otp {
+  color: #ef4444; /* text-red-500 */
+  margin-bottom: 0.5rem;
+}

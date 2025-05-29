@@ -1,0 +1,35 @@
+.body{
+    font-size:small ;
+}
+.item-link {
+  text-decoration: none;
+  color: inherit;
+}
+
+.item-card {
+  border: 1px solid #e5e7eb; /* light gray border */
+  padding: 1rem;
+  border-radius: 0.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  transition: box-shadow 0.2s ease-in-out;
+}
+
+.item-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.item-title {
+  font-weight: bold;
+  font-size: 1.25rem;
+  margin-bottom: 0.25rem;
+}
+
+.item-category {
+  color: #4b5563; /* gray-600 */
+  margin-bottom: 0.5rem;
+}
+
+.item-price {
+  color: #16a34a; /* green-600 */
+  font-weight: 600;
+}
