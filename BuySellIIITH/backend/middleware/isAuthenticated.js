@@ -1,24 +1,18 @@
 import jwt from "jsonwebtoken";
-import { User } from "../models/user.model.js"; // adjust the path as needed
+import { User } from "../models/user.model.js";
 
 const isAuthenticated = async (req, res, next) => {
   try {
     const authHeader = req.headers.authorization;
-    console.log("Incoming headers:", req.headers);
-    console.log("Authorization Header:", req.headers.authorization);
-    console.log("Cookies:", req.cookies);
-
     let token = null;
 
-if (req.cookies?.token) {
-  token = req.cookies.token;
-} else if (authHeader?.startsWith("Bearer ")) {
-  token = authHeader.split(" ")[1];
-}
+    if (req.cookies?.token) {
+      token = req.cookies.token;
+    } else if (authHeader?.startsWith("Bearer ")) {
+      token = authHeader.split(" ")[1];
+    }
 
     if (!token) {
-      console.log("Extracted token:", token);
-
       return res.status(401).json({ message: "User not authenticated" });
     }
 
@@ -32,7 +26,7 @@ if (req.cookies?.token) {
       return res.status(401).json({ message: "User not found" });
     }
 
-    req.user = user;
+    req.user = user; // or req.userId = decoded.id if you want less DB load
     next();
   } catch (error) {
     console.error("Auth middleware error:", error.message);

@@ -13,6 +13,7 @@ import {
   getSoldOrders,
   verifyDeliveryOTP
 } from '../controllers/order.controller.js';
+import isAuthenticated from '../middleware/isAuthenticated.js';
 
 const router = express.Router();
 
@@ -32,9 +33,10 @@ router.get('/', getAllOrders);
 router.get('/user/:userId', getUserOrders);
 
 // Cart routes
-router.post('/cart/add', addToCart);          // Add item to cart
+router.post('/cart/add',isAuthenticated, addToCart);          // Add item to cart
 router.post('/cart/remove', removeFromCart);  // Remove item from cart
-router.get('/cart/:userId', viewCart);        // View cart for a user
+router.get('/cart', isAuthenticated, viewCart);
+     // View cart for a user
 
 // Checkout route
 router.post('/checkout', checkout);

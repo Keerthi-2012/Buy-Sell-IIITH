@@ -13,36 +13,49 @@ const cas = new CASAuthentication({
 
 // REGISTER
 // REGISTER
+const COOKIE_OPTIONS = {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === "production",
+  sameSite: "strict",
+  maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+};
+
+// ========== REGISTER ==========
 export const register = async (req, res) => {
   try {
     const { firstName, lastName, email, age, contactNumber, password } = req.body;
     const trimmedEmail = email?.trim();
 
+    // Validate required fields
     if (!firstName || !lastName || !trimmedEmail || !age || !contactNumber || !password) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         success: false,
-        message: "All fields are required" 
+        message: "All fields are required"
       });
     }
 
+    // Email format validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(trimmedEmail)) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         success: false,
-        message: "Please enter a valid email address." 
+        message: "Please enter a valid email address."
       });
     }
 
+    // Check if user already exists
     const existingUser = await User.findOne({ email: trimmedEmail });
     if (existingUser) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         success: false,
-        message: "User with this email already exists" 
+        message: "User with this email already exists"
       });
     }
 
+    // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
+    // Create new user
     const newUser = new User({
       firstName,
       lastName,
@@ -54,70 +67,92 @@ export const register = async (req, res) => {
 
     await newUser.save();
 
+    // Generate token
     const token = jwt.sign({ id: newUser._id }, process.env.JWT_SECRET, { expiresIn: "7d" });
 
-    res.cookie("token", token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-    });
+    // Set cookie
+    res.cookie("token", token, COOKIE_OPTIONS);
 
-    res.status(201).json({
+    // Send response
+    return res.status(201).json({
       success: true,
       message: "User registered successfully",
-      user: { firstName, lastName, email: trimmedEmail },
+      user: {
+        firstName: newUser.firstName,
+        lastName: newUser.lastName,
+        email: newUser.email
+      }
     });
 
   } catch (err) {
     console.error("Register Error:", err);
-    res.status(500).json({ 
+    return res.status(500).json({
       success: false,
-      message: "Internal Server Error" 
+      message: "Internal Server Error"
     });
   }
 };
 
-// LOGIN
+// ========== LOGIN ==========
 export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
+    const trimmedEmail = email?.trim();
 
-    if (!email || !password) {
-      return res.status(400).json({ message: "Email and password are required." });
+    // Validate inputs
+    if (!trimmedEmail || !password) {
+      return res.status(400).json({
+        success: false,
+        message: "Email and password are required."
+      });
     }
 
-    const user = await User.findOne({ email });
+    // Find user by email
+    const user = await User.findOne({ email: trimmedEmail });
     if (!user) {
-      return res.status(401).json({ message: "Invalid email or password." });
+      return res.status(401).json({
+        success: false,
+        message: "Invalid email or password."
+      });
     }
 
+    // Compare password
     const isMatch = await bcrypt.compare(password, user.passwordHash);
     if (!isMatch) {
-      return res.status(401).json({ message: "Invalid email or password." });
+      return res.status(401).json({
+        success: false,
+        message: "Invalid email or password."
+      });
     }
 
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET || "default_secret", {
-      expiresIn: "7d"
-    });
+    // Generate token
+    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: "7d" });
 
-    // ✅ Send token in body
+    // Set cookie
+    res.cookie("token", token, COOKIE_OPTIONS);
+
+    // Send response
     return res.status(200).json({
-      token,
+      success: true,
+      message: "Login successful",
       user: {
         id: user._id,
         firstName: user.firstName,
         lastName: user.lastName,
-        email: user.email
+        email: user.email,
+        age: user.age,
+        contactNumber: user.contactNumber
       }
     });
 
   } catch (error) {
     console.error("Login error:", error.message);
-    res.status(500).json({ message: "Server error during login." });
+    return res.status(500).json({
+      success: false,
+      message: "Server error during login."
+    });
   }
 };
-
 // LOGOUT
 export const logout = (req, res) => {
   try {

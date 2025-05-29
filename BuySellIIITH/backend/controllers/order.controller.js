@@ -65,13 +65,17 @@ export const completeOrder = async (req, res) => {
 
     order.status = 'completed';
     order.completedAt = new Date();
+    await order.save();
 
-    const updatedOrder = await order.save();
-    res.status(200).json(updatedOrder);
+    // 🔁 Fetch updated order with populated `item`
+    const populatedOrder = await Order.findById(order._id).populate('item');
+
+    res.status(200).json(populatedOrder);
   } catch (error) {
     res.status(500).json({ message: 'Failed to complete order', error: error.message });
   }
 };
+
 
 export const getAllOrders = async (req, res) => {
   try {
@@ -127,39 +131,94 @@ export const cancelOrder = async (req, res) => {
   }
 };
 
-export const addToCart = (req, res) => {
-  const { userId, itemId } = req.body;
-  if (!userId || !itemId) return res.status(400).json({ message: 'Missing userId or itemId' });
+export const addToCart = async (req, res) => {
+  const { itemId } = req.body;
 
-  if (!cart[userId]) cart[userId] = [];
+  // User ID should come from authenticated middleware, not the body
+  const userId = req.user._id;
 
-  if (!cart[userId].includes(itemId)) {
-    cart[userId].push(itemId);
+  if (!itemId) {
+    return res.status(400).json({ message: 'Missing itemId' });
   }
 
-  res.json({ message: 'Item added to cart', cart: cart[userId] });
-};
-
-export const removeFromCart = (req, res) => {
-  const { userId, itemId } = req.body;
-  if (!userId || !itemId) return res.status(400).json({ message: 'Missing userId or itemId' });
-
-  if (cart[userId]) {
-    cart[userId] = cart[userId].filter(id => id !== itemId);
+  if (!mongoose.Types.ObjectId.isValid(itemId)) {
+    return res.status(400).json({ message: 'Invalid itemId' });
   }
 
-  res.json({ message: 'Item removed from cart', cart: cart[userId] || [] });
+  try {
+    const itemObjectId = new mongoose.Types.ObjectId(itemId);
+
+    let cart = await Cart.findOne({ user: userId });
+
+    if (!cart) {
+      cart = new Cart({
+        user: userId,
+        items: [{ item: itemObjectId, quantity: 1 }],
+      });
+    } else {
+      const existingItem = cart.items.find(
+        (ci) => ci.item.toString() === itemId
+      );
+      if (existingItem) {
+        existingItem.quantity += 1;
+      } else {
+        cart.items.push({ item: itemObjectId, quantity: 1 });
+      }
+    }
+
+    await cart.save();
+    return res.status(200).json({ message: 'Item added to cart', cart });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({
+      message: 'Failed to add item to cart',
+      error: err.message,
+    });
+  }
 };
 
-export const viewCart = (req, res) => {
-  const { userId } = req.params;
+
+export const removeFromCart = async (req, res) => {
+const { itemId } = req.body;
+const userId = req.user?._id;
+if (!userId) {
+  return res.status(401).json({ message: 'Unauthorized: user not authenticated' });
+}
+
+  if (!userId || !itemId) return res.status(400).json({ message: 'Missing userId or itemId' });
+
+  try {
+    const cart = await Cart.findOne({ user: userId });
+    if (!cart) return res.status(404).json({ message: 'Cart not found' });
+
+    cart.items = cart.items.filter(ci => ci.item.toString() !== itemId);
+    await cart.save();
+
+    res.status(200).json({ message: 'Item removed from cart', cart });
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to remove item from cart', error: err.message });
+  }
+};
+
+
+export const viewCart = async (req, res) => {
+  const userId = req.user._id;
   if (!userId) return res.status(400).json({ message: 'Missing userId' });
 
-  res.json({ cart: cart[userId] || [] });
+  try {
+    const cart = await Cart.findOne({ user: userId }).populate('items.item');
+    res.status(200).json({ cart: cart ? cart.items : [] });
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to view cart', error: err.message });
+  }
 };
 
 export const checkout = async (req, res) => {
-  const { userId, items, otp } = req.body;
+const { items, otp } = req.body;
+const userId = req.user?._id;
+if (!userId) {
+  return res.status(401).json({ message: 'Unauthorized: user not authenticated' });
+}
 
   try {
     if (!userId || !items || items.length === 0 || !otp) {
@@ -201,7 +260,8 @@ export const checkout = async (req, res) => {
       }
     }
 
-    cart[userId] = [];
+    await Cart.findOneAndDelete({ user: userId });
+
 
     res.status(201).json({ message: 'Orders placed successfully', orders });
   } catch (err) {
@@ -213,7 +273,7 @@ export const getPlacedOrders = async (req, res) => {
   const { userId } = req.params;
   try {
     const orders = await Order.find({ buyer: userId }).populate('item seller');
-    res.json({ orders });
+    res.json(orders);
   } catch (err) {
     res.status(500).json({ message: 'Failed to fetch orders', error: err.message });
   }

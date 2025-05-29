@@ -14,9 +14,9 @@ const orderSchema = new mongoose.Schema({
   },
   createdAt: { type: Date, default: Date.now },
   completedAt: Date,
-    cancelledAt: Date
-},{
-  timestamps: true  // adds createdAt and updatedAt automatically}
+  cancelledAt: Date
+}, {
+  timestamps: true // adds createdAt and updatedAt automatically
 });
 
 export const Order = mongoose.model("Order", orderSchema);
