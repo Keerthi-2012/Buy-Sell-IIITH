@@ -12,6 +12,7 @@ const orderSchema = new mongoose.Schema({
     enum: ['pending', 'completed', 'cancelled'],
     default: 'pending'
   },
+  otp: { type: String, select: true }, // DEV ONLY — not for prod
   createdAt: { type: Date, default: Date.now },
   completedAt: Date,
   cancelledAt: Date

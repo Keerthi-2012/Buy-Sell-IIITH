@@ -3,13 +3,20 @@ import { useSelector } from 'react-redux';
 import Navbar from './shared/Navbar';
 import './Orders.css';
 
-const OrderCard = ({ order, showOtp = false, isSold = false, onComplete }) => (
+const OrderCard = ({ order, showOtp = false, isCancelled = false, onComplete, onCancel }) => (
   <div className="order-card">
-    <h2>{order.item?.name || order.itemName || 'Unnamed Item'}</h2>   
+    <h2>{order.item?.name || order.itemName || 'Unnamed Item'}</h2>
     <p>Status: {order.status}</p>
-    {showOtp && order.otp && <p className="otp">Delivery OTP: {order.otp}</p>}
-    {isSold && <p>Buyer: {order.buyer?.name || order.buyerName}</p>}
-    {order.status !== 'completed' && (
+    {showOtp && <p className="otp">Delivery OTP: {order.otp || 'Not Available'}</p>}
+    {isCancelled && <p>Cancelled by: {order.cancelledBy?.name || 'Unknown'}</p>}
+
+    {order.status === 'pending' && onCancel && (
+      <button className="cancel-btn" onClick={() => onCancel(order.transactionId)}>
+        Cancel Order
+      </button>
+    )}
+
+    {order.status === 'pending' && onComplete && (
       <button className="complete-btn" onClick={() => onComplete(order.transactionId)}>
         Mark as Completed
       </button>
@@ -32,10 +39,10 @@ const Tabs = ({ activeTab, setActiveTab }) => (
       Orders Placed
     </button>
     <button
-      onClick={() => setActiveTab('sold')}
-      className={`tab-button ${activeTab === 'sold' ? 'active' : ''}`}
+      onClick={() => setActiveTab('cancelled')}
+      className={`tab-button ${activeTab === 'cancelled' ? 'active' : ''}`}
     >
-      Items Sold
+      Cancelled Orders
     </button>
   </div>
 );
@@ -45,55 +52,54 @@ const Orders = () => {
   const [activeTab, setActiveTab] = useState('pending');
   const [pendingOrders, setPendingOrders] = useState([]);
   const [placedOrders, setPlacedOrders] = useState([]);
-  const [soldOrders, setSoldOrders] = useState([]);
+  const [cancelledOrders, setCancelledOrders] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-  const fetchOrders = async () => {
-    if (!user || !user._id) return;
+    const fetchOrders = async () => {
+      if (!user || !user._id) return;
 
-    try {
-      setLoading(true);
+      try {
+        setLoading(true);
 
-      const [pendingRes, placedRes, soldRes] = await Promise.all([
-        fetch(`http://localhost:8000/api/v1/order/`, {
-          credentials: 'include',
-        }),
-        fetch(`http://localhost:8000/api/v1/order/placed/${user._id}`, {
-          credentials: 'include',
-        }),
-        fetch(`http://localhost:8000/api/v1/order/sold/${user._id}`, {
-          credentials: 'include',
-        }),
-      ]);
+        const [pendingRes, placedRes, cancelledRes] = await Promise.all([
+          fetch(`http://localhost:8000/api/v1/order/`, {
+            credentials: 'include',
+          }),
+          fetch(`http://localhost:8000/api/v1/order/placed/${user._id}`, {
+            credentials: 'include',
+          }),
+          fetch(`http://localhost:8000/api/v1/order/cancelled/${user._id}`, {
+            credentials: 'include',
+          }),
+        ]);
 
-      const [pendingData, placedData, soldData] = await Promise.all([
-        pendingRes.json(),
-        placedRes.json(),
-        soldRes.json(),
-      ]);
+        const [pendingData, placedData, cancelledData] = await Promise.all([
+          pendingRes.json(),
+          placedRes.json(),
+          cancelledRes.json(),
+        ]);
 
-      // ✅ Filter based on status
-      const filteredPending = Array.isArray(placedData)
-        ? placedData.filter((order) => order.status === 'pending')
-        : [];
+        const filteredPending = Array.isArray(placedData)
+          ? placedData.filter((order) => order.status === 'pending')
+          : [];
 
-      const filteredPlaced = Array.isArray(placedData)
-        ? placedData.filter((order) => order.status === 'completed')
-        : [];
+        const filteredPlaced = Array.isArray(placedData)
+          ? placedData.filter((order) => order.status === 'completed')
+          : [];
 
-      setPendingOrders(filteredPending);
-      setPlacedOrders(filteredPlaced);
-      setSoldOrders(Array.isArray(soldData) ? soldData : []);
-    } catch (err) {
-      console.error('Error fetching orders:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
+        setPendingOrders(filteredPending);
+        setPlacedOrders(filteredPlaced);
+        setCancelledOrders(Array.isArray(cancelledData) ? cancelledData : []);
+      } catch (err) {
+        console.error('Error fetching orders:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  fetchOrders();
-}, [user]);
+    fetchOrders();
+  }, [user]);
 
   const handleCompleteOrder = async (transactionId) => {
     try {
@@ -110,17 +116,33 @@ const Orders = () => {
 
       const updatedOrder = await res.json();
 
-      // Update pendingOrders safely
-      setPendingOrders((prev) =>
-        Array.isArray(prev) ? prev.filter((o) => o.transactionId !== transactionId) : []
-      );
-
-      // Add to placedOrders safely
-      setPlacedOrders((prev) =>
-        Array.isArray(prev) ? [updatedOrder, ...prev] : [updatedOrder]
-      );
+      setPendingOrders((prev) => prev.filter((o) => o.transactionId !== transactionId));
+      setPlacedOrders((prev) => [updatedOrder, ...prev]);
     } catch (error) {
       console.error('Error completing order:', error);
+      alert('Something went wrong!');
+    }
+  };
+
+  const handleCancelOrder = async (transactionId) => {
+    try {
+      const res = await fetch(`http://localhost:8000/api/v1/order/cancel/${transactionId}`, {
+        method: 'PATCH',
+        credentials: 'include',
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        alert(`Failed to cancel order: ${err.message}`);
+        return;
+      }
+
+      const cancelledOrder = await res.json();
+
+      setPendingOrders((prev) => prev.filter((o) => o.transactionId !== transactionId));
+      setCancelledOrders((prev) => [cancelledOrder, ...prev]);
+    } catch (error) {
+      console.error('Error cancelling order:', error);
       alert('Something went wrong!');
     }
   };
@@ -132,6 +154,7 @@ const Orders = () => {
           key={order._id || order.id}
           order={order}
           onComplete={handleCompleteOrder}
+          onCancel={handleCancelOrder}
           {...options}
         />
       ))
@@ -152,7 +175,7 @@ const Orders = () => {
             <>
               {activeTab === 'pending' && renderOrders(pendingOrders, { showOtp: true })}
               {activeTab === 'placed' && renderOrders(placedOrders)}
-              {activeTab === 'sold' && renderOrders(soldOrders, { isSold: true })}
+              {activeTab === 'cancelled' && renderOrders(cancelledOrders, { isCancelled: true })}
             </>
           )}
         </div>

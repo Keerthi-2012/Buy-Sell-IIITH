@@ -6,14 +6,38 @@ import './Delivery.css';
 const DeliveryCard = ({ order, onComplete }) => {
   const [otpInput, setOtpInput] = useState('');
   const [error, setError] = useState('');
+  const token = localStorage.getItem('token'); // or get it from Redux
 
-  const handleComplete = () => {
-    if (!otpInput || otpInput !== order.otp) {
-      setError('Incorrect OTP. Please try again.');
+  const handleComplete = async () => {
+    if (!otpInput) {
+      setError('OTP is required.');
       return;
     }
-    setError('');
-    onComplete(order.transactionId);
+
+    try {
+      const res = await fetch('http://localhost:8000/api/v1/order/verify-delivery', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          transactionId: order.transactionId,
+          otp: otpInput,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.message || 'Failed to verify OTP');
+      } else {
+        setError('');
+        onComplete(order.transactionId); // You may also refresh or refetch orders here
+      }
+    } catch (err) {
+      setError('Something went wrong. Please try again.');
+    }
   };
 
   return (
@@ -47,18 +71,13 @@ const DeliveryPage = () => {
 
       try {
         setLoading(true);
-        const res = await fetch(`http://localhost:8000/api/v1/order/sold/${user._id}`, {
+        const soldRes = await fetch(`http://localhost:8000/api/v1/order/sold/${user._id}`, {
           credentials: 'include',
         });
-        const data = await res.json();
-
-        const pendingOnly = Array.isArray(data)
-          ? data.filter((order) => order.status === 'pending')
-          : [];
-
-        setDeliveryOrders(pendingOnly);
+        const soldData = await soldRes.json();
+        setDeliveryOrders(Array.isArray(soldData) ? soldData : []);
       } catch (err) {
-        console.error('Failed to fetch deliveries:', err);
+        console.error('Error fetching orders:', err);
       } finally {
         setLoading(false);
       }
@@ -67,39 +86,9 @@ const DeliveryPage = () => {
     fetchPendingDeliveries();
   }, [user]);
 
-  const handleComplete = async () => {
-  if (!otpInput) {
-    setError('OTP is required.');
-    return;
-  }
-
-  try {
-    const res = await fetch(`http://localhost:8000/api/v1/order/verify-delivery`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      credentials: 'include',
-      body: JSON.stringify({
-        transactionId: order.transactionId,
-        otp: otpInput,
-      }),
-    });
-
-    const data = await res.json();
-
-    if (!res.ok) {
-      setError(data.message || 'Failed to verify OTP.');
-      return;
-    }
-
-    setError('');
-    onComplete(order.transactionId);
-  } catch (err) {
-    console.error('Error verifying OTP:', err);
-    setError('Something went wrong.');
-  }
-};
+  const handleDeliveryComplete = (transactionId) => {
+    setDeliveryOrders((prev) => prev.filter((order) => order.transactionId !== transactionId));
+  };
 
   return (
     <div>
@@ -115,7 +104,7 @@ const DeliveryPage = () => {
             <DeliveryCard
               key={order._id}
               order={order}
-              onComplete={handleComplete}
+              onComplete={handleDeliveryComplete}
             />
           ))
         )}

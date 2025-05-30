@@ -12,7 +12,8 @@ import {
   getPlacedOrders,
   getSoldOrders,
   verifyDeliveryOTP,
-  checkoutAllItems
+  checkoutAllItems,
+  getCancelledOrders
 } from '../controllers/order.controller.js';
 import isAuthenticated from '../middleware/isAuthenticated.js';
 
@@ -43,9 +44,10 @@ router.post('/cart/remove', isAuthenticated, removeFromCart);  // ✅ Protect th
 // Checkout route
 router.post('/checkoutallItems',isAuthenticated, checkoutAllItems);
 router.post('/checkout',isAuthenticated, checkout);
-
+router.get('/cancelled/:userId', isAuthenticated, getCancelledOrders);
 router.get('/placed/:userId', getPlacedOrders); // Orders placed by buyer
 router.get('/sold/:userId', getSoldOrders); // Orders sold by seller
+
 
 // OTP verification for delivery
 router.post('/verify-delivery',isAuthenticated, verifyDeliveryOTP); // Verify delivery with OTP

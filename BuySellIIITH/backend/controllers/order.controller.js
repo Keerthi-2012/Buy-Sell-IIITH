@@ -36,14 +36,16 @@ export const createOrder = async (req, res) => {
     const generatedOtp = Math.floor(100000 + Math.random() * 900000).toString();
     const hashedOTP = await bcrypt.hash(generatedOtp, 10);
 
-    const order = new Order({
-      transactionId,
-      buyer,
-      seller,
-      item,
-      amount,
-      hashedOTP,
-    });
+const order = new Order({
+  transactionId,
+  buyer,
+  seller,
+  item,
+  amount,
+  hashedOTP,
+  otp: generatedOtp // for testing/debugging only
+});
+
 
     const savedOrder = await order.save();
 
@@ -60,6 +62,24 @@ export const createOrder = async (req, res) => {
   }
 };
 
+// GET /api/v1/order/otp/:transactionId
+export const getOtpForOrder = async (req, res) => {
+  const { transactionId } = req.params;
+  const userId = req.user._id; // assuming you're using JWT and user is set
+
+  const order = await Order.findOne({ transactionId });
+
+  if (!order) return res.status(404).json({ message: 'Order not found' });
+
+  if (order.seller.toString() !== userId.toString()) {
+    return res.status(403).json({ message: 'Access denied' });
+  }
+
+  // ❌ Return OTP only once or add a TTL mechanism
+  return res.status(200).json({ message: 'OTP access not supported securely yet' });
+};
+
+
 export const completeOrder = async (req, res) => {
   try {
     const { transactionId } = req.params;
@@ -68,6 +88,7 @@ export const completeOrder = async (req, res) => {
     if (!enteredOtp) return res.status(400).json({ message: 'OTP is required' });
 
     const order = await Order.findOne({ transactionId });
+
     if (!order) return res.status(404).json({ message: 'Order not found' });
 
     if (order.status === 'completed') return res.status(400).json({ message: 'Order is already completed' });
@@ -275,7 +296,7 @@ export const checkout = async (req, res) => {
   }
 
   try {
-    if (!userId || !items || items.length === 0 ) {
+    if (!userId || !items || items.length === 0) {
       return res.status(400).json({ message: 'Missing required fields' });
     }
 
@@ -311,25 +332,25 @@ export const checkout = async (req, res) => {
     }
 
     // 🧩 Step 3: Create orders
-const generatedOtp = Math.floor(100000 + Math.random() * 900000).toString();
-const hashedOTP = await bcrypt.hash(generatedOtp, 10);
+    const generatedOtp = Math.floor(100000 + Math.random() * 900000).toString();
+    const hashedOTP = await bcrypt.hash(generatedOtp, 10);
     const orders = [];
 
     for (const sellerId in itemsBySeller) {
       for (const item of itemsBySeller[sellerId]) {
         const transactionId = uuidv4();
 
-const order = new Order({
-  transactionId,
-  buyer: userId,
-  seller: sellerId,
-  item: item._id,
-  amount: item.price,
-  hashedOTP,
-});
+        const order = new Order({
+          transactionId,
+          buyer: userId,
+          seller: sellerId,
+          item: item._id,
+          amount: item.price,
+          hashedOTP,
+        });
 
         const savedOrder = await order.save();
-orders.push({ order: savedOrder, otp: generatedOtp }); 
+        orders.push({ order: savedOrder, otp: generatedOtp });
       }
     }
 
@@ -420,12 +441,34 @@ export const getPlacedOrders = async (req, res) => {
 export const getSoldOrders = async (req, res) => {
   const { userId } = req.params;
   try {
-    const orders = await Order.find({ seller: userId }).populate('item buyer');
-    res.json({ orders });
+    const orders = await Order.find({
+      seller: userId,
+      status: 'pending'
+    }).populate('item buyer');
+
+    res.json(orders);
   } catch (err) {
     res.status(500).json({ message: 'Failed to fetch orders', error: err.message });
   }
 };
+export const getCancelledOrders = async (req, res) => {
+  const { userId } = req.params;
+  try {
+    const orders = await Order.find({
+      seller: userId,
+      status: 'cancelled'
+    }).populate('item buyer');
+const enrichedOrders = orders.map(order => ({
+  ...order.toObject(),
+  itemName: order.item?.name || 'Unnamed Item',
+}));
+
+res.json(enrichedOrders);
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to fetch orders', error: err.message });
+  }
+};
+
 
 export const verifyDeliveryOTP = async (req, res) => {
   const { transactionId, otp } = req.body;
@@ -441,9 +484,11 @@ export const verifyDeliveryOTP = async (req, res) => {
       return res.status(404).json({ message: "Order not found." });
     }
 
-    if (order.otp !== otp) {
+    const isOtpValid = await bcrypt.compare(otp, order.hashedOTP);
+    if (!isOtpValid) {
       return res.status(400).json({ message: "Invalid OTP." });
     }
+
 
     order.status = 'completed';
     await order.save();
