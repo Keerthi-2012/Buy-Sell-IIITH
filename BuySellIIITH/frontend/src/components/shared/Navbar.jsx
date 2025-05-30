@@ -43,6 +43,7 @@ const getInitials = (firstName, lastName) => {
                     <li><RouterLink to="/SellItem">Sell</RouterLink></li>
                     <li><RouterLink to="/cart">Cart</RouterLink></li>
                     <li><RouterLink to="/Orders">Orders</RouterLink></li>
+                    <li><RouterLink to="/DeliveryPage">Delivery</RouterLink></li>
                 </ul>
                 {
                     !user ? (

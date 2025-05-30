@@ -22,7 +22,7 @@ const router = express.Router();
 router.post('/', createOrder);
 
 // Complete an order by transactionId
-router.patch('/complete/:transactionId', completeOrder);
+router.patch('/complete/:transactionId',isAuthenticated, completeOrder);
 
 // Cancel an order by transactionId
 router.patch('/cancel/:transactionId', cancelOrder);
@@ -48,7 +48,7 @@ router.get('/placed/:userId', getPlacedOrders); // Orders placed by buyer
 router.get('/sold/:userId', getSoldOrders); // Orders sold by seller
 
 // OTP verification for delivery
-router.post('/verify-delivery', verifyDeliveryOTP); // Verify delivery with OTP
+router.post('/verify-delivery',isAuthenticated, verifyDeliveryOTP); // Verify delivery with OTP
 
 
 export default router;

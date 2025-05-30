@@ -8,9 +8,10 @@ import { Cart } from '../models/cart.model.js';
 
 export const createOrder = async (req, res) => {
   try {
-    const { transactionId, buyer, seller, item, amount, otp } = req.body;
+    const { transactionId, buyer, seller, item, amount } = req.body;
 
-    if (!transactionId || !buyer || !seller || !item || !amount || !otp) {
+    // ✅ Validate required fields
+    if (!transactionId || !buyer || !seller || !item || !amount) {
       return res.status(400).json({ message: 'All fields are required' });
     }
 
@@ -31,7 +32,9 @@ export const createOrder = async (req, res) => {
       return res.status(400).json({ message: 'Order with this transactionId already exists' });
     }
 
-    const hashedOTP = await bcrypt.hash(otp, 10);
+    // ✅ Generate and hash OTP
+    const generatedOtp = Math.floor(100000 + Math.random() * 900000).toString();
+    const hashedOTP = await bcrypt.hash(generatedOtp, 10);
 
     const order = new Order({
       transactionId,
@@ -43,7 +46,12 @@ export const createOrder = async (req, res) => {
     });
 
     const savedOrder = await order.save();
-    res.status(201).json(savedOrder);
+
+    res.status(201).json({
+      order: savedOrder,
+      otp: generatedOtp, // send OTP only in response to seller
+    });
+
   } catch (error) {
     if (error.code === 11000) {
       return res.status(400).json({ message: 'Duplicate transactionId' });
@@ -55,30 +63,27 @@ export const createOrder = async (req, res) => {
 export const completeOrder = async (req, res) => {
   try {
     const { transactionId } = req.params;
-    const { enteredOtp } = req.body;  // OTP entered by the seller
+    const { enteredOtp } = req.body;
 
-    if (!enteredOtp) {
-      return res.status(400).json({ message: 'OTP is required' });
-    }
+    if (!enteredOtp) return res.status(400).json({ message: 'OTP is required' });
 
     const order = await Order.findOne({ transactionId });
     if (!order) return res.status(404).json({ message: 'Order not found' });
 
-    if (order.status === 'completed') {
-      return res.status(400).json({ message: 'Order is already completed' });
+    if (order.status === 'completed') return res.status(400).json({ message: 'Order is already completed' });
+
+    // ✅ Optional: Confirm current user is the seller
+    if (order.seller.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: 'Only the seller can complete the order' });
     }
 
-    // Verify OTP
     const isOtpValid = await bcrypt.compare(enteredOtp, order.hashedOTP);
-    if (!isOtpValid) {
-      return res.status(400).json({ message: 'Incorrect OTP' });
-    }
+    if (!isOtpValid) return res.status(400).json({ message: 'Incorrect OTP' });
 
     order.status = 'completed';
     order.completedAt = new Date();
     await order.save();
 
-    // Return updated order with populated item and buyer info
     const populatedOrder = await Order.findById(order._id)
       .populate('item')
       .populate('buyer', 'firstName lastName email');
@@ -88,6 +93,7 @@ export const completeOrder = async (req, res) => {
     res.status(500).json({ message: 'Failed to complete order', error: error.message });
   }
 };
+
 
 
 export const getAllOrders = async (req, res) => {
@@ -305,24 +311,25 @@ export const checkout = async (req, res) => {
     }
 
     // 🧩 Step 3: Create orders
-    const hashedOTP = await bcrypt.hash(otp, 10);
+const generatedOtp = Math.floor(100000 + Math.random() * 900000).toString();
+const hashedOTP = await bcrypt.hash(generatedOtp, 10);
     const orders = [];
 
     for (const sellerId in itemsBySeller) {
       for (const item of itemsBySeller[sellerId]) {
         const transactionId = uuidv4();
 
-        const order = new Order({
-          transactionId,
-          buyer: userId,
-          seller: sellerId,
-          item: item._id,
-          amount: item.price,
-          hashedOTP,
-        });
+const order = new Order({
+  transactionId,
+  buyer: userId,
+  seller: sellerId,
+  item: item._id,
+  amount: item.price,
+  hashedOTP,
+});
 
         const savedOrder = await order.save();
-        orders.push(savedOrder);
+orders.push({ order: savedOrder, otp: generatedOtp }); 
       }
     }
 
@@ -422,19 +429,28 @@ export const getSoldOrders = async (req, res) => {
 
 export const verifyDeliveryOTP = async (req, res) => {
   const { transactionId, otp } = req.body;
+
+  if (!transactionId || !otp) {
+    return res.status(400).json({ message: "Transaction ID and OTP are required." });
+  }
+
   try {
     const order = await Order.findOne({ transactionId });
-    if (!order) return res.status(404).json({ message: 'Order not found' });
 
-    const isMatch = await bcrypt.compare(otp, order.hashedOTP);
-    if (!isMatch) return res.status(400).json({ message: 'Invalid OTP' });
+    if (!order) {
+      return res.status(404).json({ message: "Order not found." });
+    }
+
+    if (order.otp !== otp) {
+      return res.status(400).json({ message: "Invalid OTP." });
+    }
 
     order.status = 'completed';
-    order.completedAt = new Date();
     await order.save();
 
-    res.json({ message: 'Delivery verified', order });
-  } catch (err) {
-    res.status(500).json({ message: 'Verification failed', error: err.message });
+    return res.status(200).json({ message: "Delivery completed successfully." });
+  } catch (error) {
+    console.error("OTP verification error:", error.message);
+    return res.status(500).json({ message: "Internal server error." });
   }
 };
