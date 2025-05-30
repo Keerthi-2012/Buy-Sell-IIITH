@@ -5,11 +5,10 @@ const isAuthenticated = async (req, res, next) => {
   try {
     const authHeader = req.headers.authorization;
     let token = null;
-
-    if (req.cookies?.token) {
-      token = req.cookies.token;
-    } else if (authHeader?.startsWith("Bearer ")) {
+    if (authHeader?.startsWith("Bearer ")) {
       token = authHeader.split(" ")[1];
+    } else if (req.cookies?.token) {
+      token = req.cookies.token;
     }
 
     if (!token) {
@@ -17,6 +16,8 @@ const isAuthenticated = async (req, res, next) => {
     }
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+    // decoded should now contain `id` correctly
     if (!decoded?.id) {
       return res.status(401).json({ message: "Invalid token payload" });
     }
@@ -26,7 +27,8 @@ const isAuthenticated = async (req, res, next) => {
       return res.status(401).json({ message: "User not found" });
     }
 
-    req.user = user; // or req.userId = decoded.id if you want less DB load
+    req.user = user;
+    console.log("Authenticated user ID:", user._id.toString());
     next();
   } catch (error) {
     console.error("Auth middleware error:", error.message);

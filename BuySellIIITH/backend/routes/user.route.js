@@ -17,7 +17,7 @@ router.route('/register').post(register);
 router.route('/login').post(login);
 router.route('/logout').get(logout);
 router.get('/profile', isAuthenticated, getProfile); 
-router.route('/update').post(isAuthenticated, updateProfile);
+router.route('/update').put(isAuthenticated, updateProfile);
 
 // 🟢 CAS login route
 router.route('/cas-login').get(cas.bounce, casLogin);

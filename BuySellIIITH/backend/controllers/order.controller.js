@@ -131,49 +131,82 @@ export const cancelOrder = async (req, res) => {
   }
 };
 
+
+
 export const addToCart = async (req, res) => {
-  const { itemId } = req.body;
-
-  // User ID should come from authenticated middleware, not the body
-  const userId = req.user._id;
-
-  if (!itemId) {
-    return res.status(400).json({ message: 'Missing itemId' });
-  }
-
-  if (!mongoose.Types.ObjectId.isValid(itemId)) {
-    return res.status(400).json({ message: 'Invalid itemId' });
-  }
-
   try {
-    const itemObjectId = new mongoose.Types.ObjectId(itemId);
+    const userId = req.user._id.toString();
+    const { itemId, quantity: rawQuantity } = req.body;
+
+    if (!itemId) return res.status(400).json({ error: "itemId is required" });
+
+    const quantity = Number(rawQuantity) || 1; // default to 1 if not provided
+
+    if (!mongoose.Types.ObjectId.isValid(itemId))
+      return res.status(400).json({ error: "Invalid itemId" });
+
+    if (quantity <= 0)
+      return res.status(400).json({ error: "Quantity must be positive" });
 
     let cart = await Cart.findOne({ user: userId });
 
     if (!cart) {
       cart = new Cart({
         user: userId,
-        items: [{ item: itemObjectId, quantity: 1 }],
+        items: [{ item: itemId, quantity }],
       });
     } else {
-      const existingItem = cart.items.find(
-        (ci) => ci.item.toString() === itemId
+      const index = cart.items.findIndex(
+        (i) => i.item.toString() === itemId
       );
-      if (existingItem) {
-        existingItem.quantity += 1;
+
+      if (index > -1) {
+        cart.items[index].quantity += quantity;
       } else {
-        cart.items.push({ item: itemObjectId, quantity: 1 });
+        cart.items.push({ item: itemId, quantity });
       }
     }
 
     await cart.save();
-    return res.status(200).json({ message: 'Item added to cart', cart });
+
+    // Return populated cart for frontend convenience
+    const populatedCart = await Cart.findById(cart._id).populate('items.item');
+    res.status(200).json(populatedCart);
   } catch (err) {
-    console.error(err);
-    return res.status(500).json({
-      message: 'Failed to add item to cart',
-      error: err.message,
-    });
+    console.error("Add to cart error:", err);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+};
+
+export const viewCart = async (req, res) => {
+  console.log("🛠 viewCart controller invoked");
+  try {
+    const userId = req.user.id; // fixed
+
+    let cart = await Cart.findOne({ user: userId }).populate("items.item");
+
+    if (!cart) {
+      cart = await Cart.create({ user: userId, items: [] });
+    }
+    if (cart.user.toString() !== userId) {
+  console.warn("Cart-user mismatch!");
+  return res.status(403).json({ error: "Unauthorized cart access" });
+}
+console.log("Expected user:", userId);
+console.log("Cart belongs to:", cart?.user?.toString());
+if (cart.user.toString() !== userId) {
+  console.warn("Cart belongs to another user. Creating new one.");
+  cart = await Cart.create({ user: userId, items: [] });
+}
+
+
+    console.log("Fetching cart for user ID:", userId);
+    console.log("Found cart belongs to:", cart?.user?.toString());
+
+    res.status(200).json(cart);
+  } catch (err) {
+    console.error("View cart error:", err);
+    res.status(500).json({ error: "Failed to fetch cart" });
   }
 };
 
@@ -201,17 +234,6 @@ if (!userId) {
 };
 
 
-export const viewCart = async (req, res) => {
-  const userId = req.user._id;
-  if (!userId) return res.status(400).json({ message: 'Missing userId' });
-
-  try {
-    const cart = await Cart.findOne({ user: userId }).populate('items.item');
-    res.status(200).json({ cart: cart ? cart.items : [] });
-  } catch (err) {
-    res.status(500).json({ message: 'Failed to view cart', error: err.message });
-  }
-};
 
 export const checkout = async (req, res) => {
 const { items, otp } = req.body;

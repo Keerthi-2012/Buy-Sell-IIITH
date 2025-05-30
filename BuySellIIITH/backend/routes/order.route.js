@@ -33,9 +33,10 @@ router.get('/', getAllOrders);
 router.get('/user/:userId', getUserOrders);
 
 // Cart routes
+router.get('/cart', isAuthenticated, viewCart);
 router.post('/cart/add',isAuthenticated, addToCart);          // Add item to cart
 router.post('/cart/remove', removeFromCart);  // Remove item from cart
-router.get('/cart', isAuthenticated, viewCart);
+
      // View cart for a user
 
 // Checkout route

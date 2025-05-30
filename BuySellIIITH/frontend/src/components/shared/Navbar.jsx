@@ -17,18 +17,20 @@ import { logoutUser } from '@/redux/authActions'
 const Navbar = () => {
     const dispatch = useDispatch();
     const navigate = useNavigate();
-
-    const getInitials = (name) => {
-        if (!name) return "US";
-        const [first, last] = name.split(" ");
-        return `${first?.[0] ?? ""}${last?.[0] ?? ""}`.toUpperCase();
-    };
+    const { user } = useSelector((state) => state.auth);
+const getInitials = (firstName, lastName) => {
+    if (!firstName && !lastName) return "US";
+    const first = firstName?.[0] ?? "";
+    const second = lastName?.[0] ?? "";
+    return `${first}${second}`.toUpperCase();
+};
 
     const handleLogout = async () => {
-        await dispatch(logoutUser());
-        navigate('/login');
+        dispatch(logoutUser());
+  localStorage.removeItem('token');
+  navigate('/login');
     };
-    const { user } = useSelector((state) => state.auth);
+
     return (
         <div className="navbar-container">
             <div className="logo">
@@ -56,24 +58,19 @@ const Navbar = () => {
                         <Popover>
                             <PopoverTrigger asChild>
                                 <div className="avatar-trigger">
-                                    <div className="avatar-trigger">
-                                        <div className="avatar-fallback">
-                                            {getInitials(user.name)}
-                                        </div>
+                                    <div className="avatar-fallback">
+                                        {getInitials(user.firstName, user.lastName)}
                                     </div>
-
                                 </div>
                             </PopoverTrigger>
                             <PopoverContent className="popover-content">
                                 <div>
                                     <div className="popover-header">
-                                        <div className="avatar-trigger">
                                         <div className="avatar-fallback">
-                                            {getInitials(user.name)}
+                                            {getInitials(user.firstName, user.lastName)}
                                         </div>
-                                    </div>
                                         <div>
-                                            <h4 className="user-name">{user.name}</h4>
+                                            <h4 className="user-name">{user.firstName} {user.lastName}</h4>
                                         </div>
                                     </div>
                                     <div className="popover-actions">
@@ -84,7 +81,6 @@ const Navbar = () => {
                                         <div className="action-item">
                                             <LogOut />
                                             <Button variant="link" onClick={handleLogout}>Logout</Button>
-
                                         </div>
                                     </div>
                                 </div>

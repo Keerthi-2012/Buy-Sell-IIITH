@@ -57,16 +57,23 @@ const Login = () => {
       if (response.status === 200 || data.success) {
         const normalizedUser = { ...data.user, _id: data.user._id || data.user.id };
 
-        dispatch(setUser(normalizedUser));
+        const token = data.token;
+        if (!token) {
+          toast.error("Login failed: No token received");
+          return;
+        }
+        console.log("Logged in:", normalizedUser);
+
+        localStorage.removeItem('token');                  // Clear old token
+        localStorage.setItem('token', data.token);         // Store new token
+        console.log("Stored token:", localStorage.getItem('token'));
+
+        dispatch(setUser(normalizedUser));                 // ✅ Redux AFTER token is saved
 
         toast.success(data.message || 'Login successful!');
-
-        // localStorage.setItem('user', JSON.stringify(data.user));
-        localStorage.setItem('token', data.token);
-        console.log("Login API response:", data.user);
-
-        navigate('/');
+        navigate('/');                                     // ✅ Finally navigate
       }
+
     } catch (error) {
       if (error.response) {
         toast.error(error.response.data.message || 'Login failed');

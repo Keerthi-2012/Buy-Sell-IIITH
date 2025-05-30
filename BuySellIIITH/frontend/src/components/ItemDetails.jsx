@@ -25,36 +25,40 @@ const ItemDetails = () => {
     };
     fetchItem();
   }, [id]);
+  
+const handleAddToCart = async () => {
+  if (!user) {
+    alert("You need to login to add items to cart.");
+    return;
+  }
 
-  const handleAddToCart = async () => {
-    if (!user) {
-      alert('You need to login to add items to cart.');
-      return;
+  try {
+    const res = await fetch("http://localhost:8000/api/v1/order/cart/add", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${localStorage.getItem("token")}`,
+      },
+      credentials: "include",
+      body: JSON.stringify({ itemId: id, quantity: 1 }),
+    });
+
+    if (!res.ok) {
+      const errorData = await res.json();
+      throw new Error(errorData.error || "Failed to add to cart");
     }
 
-    try {
-      const res = await fetch('http://localhost:8000/api/v1/order/cart/add', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include', // ✅ Important
-        body: JSON.stringify({ itemId: id }),
-      });
+    const data = await res.json();
+    alert(`${item.name} added to cart`);
+    console.log("Cart after add:", data);
+    navigate("/cart");
+  } catch (err) {
+    console.error(err);
+    alert("Could not add to cart");
+  }
+};
 
 
-
-      if (!res.ok) throw new Error('Failed to add to cart');
-
-      // Optional: alert success
-      alert(`${item.name} added to cart`);
-      console.log("Cart Add: userId=", user._id || user.id, "itemId=", id);
-
-      // ✅ Redirect to cart
-      navigate('/cart');
-    } catch (err) {
-      console.error(err);
-      alert('Could not add to cart');
-    }
-  };
 
   const handleBuyNow = async () => {
   if (!user) {

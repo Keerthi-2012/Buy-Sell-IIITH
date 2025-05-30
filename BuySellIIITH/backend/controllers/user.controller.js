@@ -94,12 +94,12 @@ export const register = async (req, res) => {
 };
 
 // ========== LOGIN ==========
+// login controller
 export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
     const trimmedEmail = email?.trim();
 
-    // Validate inputs
     if (!trimmedEmail || !password) {
       return res.status(400).json({
         success: false,
@@ -107,7 +107,6 @@ export const login = async (req, res) => {
       });
     }
 
-    // Find user by email
     const user = await User.findOne({ email: trimmedEmail });
     if (!user) {
       return res.status(401).json({
@@ -116,7 +115,6 @@ export const login = async (req, res) => {
       });
     }
 
-    // Compare password
     const isMatch = await bcrypt.compare(password, user.passwordHash);
     if (!isMatch) {
       return res.status(401).json({
@@ -125,26 +123,24 @@ export const login = async (req, res) => {
       });
     }
 
-    // Generate token
+    // Change here: sign token with { id: user._id }
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: "7d" });
 
-    // Set cookie
     res.cookie("token", token, COOKIE_OPTIONS);
 
-    // Send response
     return res.status(200).json({
       success: true,
       message: "Login successful",
       user: {
-        id: user._id,
+        _id: user._id.toString(),
         firstName: user.firstName,
         lastName: user.lastName,
         email: user.email,
         age: user.age,
-        contactNumber: user.contactNumber
-      }
+        contactNumber: user.contactNumber,
+      },
+      token,
     });
-
   } catch (error) {
     console.error("Login error:", error.message);
     return res.status(500).json({
@@ -153,6 +149,7 @@ export const login = async (req, res) => {
     });
   }
 };
+
 // LOGOUT
 export const logout = (req, res) => {
   try {
