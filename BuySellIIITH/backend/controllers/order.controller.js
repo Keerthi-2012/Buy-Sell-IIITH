@@ -55,6 +55,11 @@ export const createOrder = async (req, res) => {
 export const completeOrder = async (req, res) => {
   try {
     const { transactionId } = req.params;
+    const { enteredOtp } = req.body;  // OTP entered by the seller
+
+    if (!enteredOtp) {
+      return res.status(400).json({ message: 'OTP is required' });
+    }
 
     const order = await Order.findOne({ transactionId });
     if (!order) return res.status(404).json({ message: 'Order not found' });
@@ -63,12 +68,20 @@ export const completeOrder = async (req, res) => {
       return res.status(400).json({ message: 'Order is already completed' });
     }
 
+    // Verify OTP
+    const isOtpValid = await bcrypt.compare(enteredOtp, order.hashedOTP);
+    if (!isOtpValid) {
+      return res.status(400).json({ message: 'Incorrect OTP' });
+    }
+
     order.status = 'completed';
     order.completedAt = new Date();
     await order.save();
 
-    // 🔁 Fetch updated order with populated `item`
-    const populatedOrder = await Order.findById(order._id).populate('item');
+    // Return updated order with populated item and buyer info
+    const populatedOrder = await Order.findById(order._id)
+      .populate('item')
+      .populate('buyer', 'firstName lastName email');
 
     res.status(200).json(populatedOrder);
   } catch (error) {
@@ -189,15 +202,15 @@ export const viewCart = async (req, res) => {
       cart = await Cart.create({ user: userId, items: [] });
     }
     if (cart.user.toString() !== userId) {
-  console.warn("Cart-user mismatch!");
-  return res.status(403).json({ error: "Unauthorized cart access" });
-}
-console.log("Expected user:", userId);
-console.log("Cart belongs to:", cart?.user?.toString());
-if (cart.user.toString() !== userId) {
-  console.warn("Cart belongs to another user. Creating new one.");
-  cart = await Cart.create({ user: userId, items: [] });
-}
+      console.warn("Cart-user mismatch!");
+      return res.status(403).json({ error: "Unauthorized cart access" });
+    }
+    console.log("Expected user:", userId);
+    console.log("Cart belongs to:", cart?.user?.toString());
+    if (cart.user.toString() !== userId) {
+      console.warn("Cart belongs to another user. Creating new one.");
+      cart = await Cart.create({ user: userId, items: [] });
+    }
 
 
     console.log("Fetching cart for user ID:", userId);
@@ -212,41 +225,71 @@ if (cart.user.toString() !== userId) {
 
 
 export const removeFromCart = async (req, res) => {
-const { itemId } = req.body;
-const userId = req.user?._id;
-if (!userId) {
-  return res.status(401).json({ message: 'Unauthorized: user not authenticated' });
-}
+  const itemId = req.body.itemId?.toString();
+  const userId = req.user?._id;
 
-  if (!userId || !itemId) return res.status(400).json({ message: 'Missing userId or itemId' });
+  if (!userId) {
+    return res.status(401).json({ message: 'Unauthorized: user not authenticated' });
+  }
+
+  if (!itemId) return res.status(400).json({ message: 'Missing itemId' });
 
   try {
     const cart = await Cart.findOne({ user: userId });
     if (!cart) return res.status(404).json({ message: 'Cart not found' });
 
-    cart.items = cart.items.filter(ci => ci.item.toString() !== itemId);
-    await cart.save();
+    const itemIndex = cart.items.findIndex(ci => ci.item.toString() === itemId);
 
-    res.status(200).json({ message: 'Item removed from cart', cart });
+    if (itemIndex === -1) {
+      return res.status(404).json({ message: 'Item not found in cart' });
+    }
+
+    // If quantity > 1, decrement it; else remove the item
+    if (cart.items[itemIndex].quantity > 1) {
+      cart.items[itemIndex].quantity -= 1;
+    } else {
+      cart.items.splice(itemIndex, 1);
+    }
+
+    await cart.save();
+    const updatedCart = await Cart.findOne({ user: userId }).populate("items.item");
+
+    res.status(200).json({ message: 'Item quantity updated / removed from cart', cart: updatedCart });
   } catch (err) {
-    res.status(500).json({ message: 'Failed to remove item from cart', error: err.message });
+    res.status(500).json({ message: 'Failed to update cart', error: err.message });
   }
 };
 
 
-
 export const checkout = async (req, res) => {
-const { items, otp } = req.body;
-const userId = req.user?._id;
-if (!userId) {
-  return res.status(401).json({ message: 'Unauthorized: user not authenticated' });
-}
+  const { items, otp } = req.body;
+  const userId = req.user?._id;
+  if (!userId) {
+    return res.status(401).json({ message: 'Unauthorized: user not authenticated' });
+  }
 
   try {
-    if (!userId || !items || items.length === 0 || !otp) {
+    if (!userId || !items || items.length === 0 ) {
       return res.status(400).json({ message: 'Missing required fields' });
     }
 
+    // 🧩 Step 1: Validate all requested items are in the user's cart
+    const userCart = await Cart.findOne({ user: userId });
+    if (!userCart || userCart.items.length === 0) {
+      return res.status(400).json({ message: 'Cart is empty' });
+    }
+
+    const cartItemIds = userCart.items.map(ci => ci.item.toString());
+    const invalidItems = items.filter(itemId => !cartItemIds.includes(itemId.toString()));
+
+    if (invalidItems.length > 0) {
+      return res.status(400).json({
+        message: 'Some items are not in your cart',
+        invalidItems,
+      });
+    }
+
+    // 🧩 Step 2: Fetch item details and organize by seller
     const fetchedItems = await Item.find({ _id: { $in: items } }).populate('seller');
 
     const itemsBySeller = {};
@@ -261,6 +304,7 @@ if (!userId) {
       itemsBySeller[sellerId].push(item);
     }
 
+    // 🧩 Step 3: Create orders
     const hashedOTP = await bcrypt.hash(otp, 10);
     const orders = [];
 
@@ -282,14 +326,79 @@ if (!userId) {
       }
     }
 
-    await Cart.findOneAndDelete({ user: userId });
-
+    // 🧩 Step 4: Remove only purchased items from the cart
+    await Cart.updateOne(
+      { user: userId },
+      { $pull: { items: { item: { $in: items } } } }
+    );
 
     res.status(201).json({ message: 'Orders placed successfully', orders });
   } catch (err) {
     res.status(500).json({ message: 'Checkout failed', error: err.message });
   }
 };
+
+
+export const checkoutAllItems = async (req, res) => {
+  const { otp } = req.body;
+  const userId = req.user?._id;
+  if (!userId) {
+    return res.status(401).json({ message: 'Unauthorized: user not authenticated' });
+  }
+
+  try {
+    // 🧩 Step 1: Get user's cart
+    const userCart = await Cart.findOne({ user: userId }).populate('items.item');
+    if (!userCart || userCart.items.length === 0) {
+      return res.status(400).json({ message: 'Cart is empty' });
+    }
+
+    // 🧩 Step 2: Fetch items and group by seller
+    const itemsBySeller = {};
+    for (const cartItem of userCart.items) {
+      const item = cartItem.item;
+      await item.populate('seller');
+
+      if (item.seller._id.toString() === userId.toString()) {
+        return res.status(400).json({ message: 'Cannot buy your own item', itemId: item._id });
+      }
+
+      const sellerId = item.seller._id.toString();
+      if (!itemsBySeller[sellerId]) itemsBySeller[sellerId] = [];
+      itemsBySeller[sellerId].push(item);
+    }
+
+    // 🧩 Step 3: Create orders
+    const hashedOTP = await bcrypt.hash(otp, 10);
+    const orders = [];
+
+    for (const sellerId in itemsBySeller) {
+      for (const item of itemsBySeller[sellerId]) {
+        const transactionId = uuidv4();
+
+        const order = new Order({
+          transactionId,
+          buyer: userId,
+          seller: sellerId,
+          item: item._id,
+          amount: item.price,
+          hashedOTP,
+        });
+
+        const savedOrder = await order.save();
+        orders.push(savedOrder);
+      }
+    }
+
+    // 🧩 Step 4: Clear the user's cart
+    await Cart.updateOne({ user: userId }, { $set: { items: [] } });
+
+    res.status(201).json({ message: 'All items checked out successfully', orders });
+  } catch (err) {
+    res.status(500).json({ message: 'Checkout failed', error: err.message });
+  }
+};
+
 
 export const getPlacedOrders = async (req, res) => {
   const { userId } = req.params;

@@ -32,11 +32,11 @@ const SellItem = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-const token = localStorage.getItem('token');
-  if (!token) {
-    alert("You're not logged in. Please log in to list an item.");
-    return;
-  }
+    const token = localStorage.getItem('token');
+    if (!token) {
+      alert("You're not logged in. Please log in to list an item.");
+      return;
+    }
     if (isAddingNewCategory && !newCategory.trim()) {
       alert('Please enter a new category name.');
       return;
@@ -57,14 +57,15 @@ const token = localStorage.getItem('token');
 
     try {
       const token = localStorage.getItem('token');
-const res = await fetch('http://localhost:8000/api/v1/item/create', {
-  method: 'POST',
-  credentials: 'include',
-  headers: {
-    'Content-Type': 'application/json'
-  },
-  body: JSON.stringify(itemData),
-});
+      const res = await fetch('http://localhost:8000/api/v1/item/create', {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`, // ✅ Send token for backend to authenticate
+        },
+        body: JSON.stringify(itemData),
+      });
 
 
 
@@ -91,92 +92,92 @@ const res = await fetch('http://localhost:8000/api/v1/item/create', {
 
   return (
     <div>
-  <Navbar />
-  <div className="page-center-wrapper">
-    <div className="sell-item-container">
-      <h1 className="sell-item-title">Sell an Item</h1>
-      <form onSubmit={handleSubmit} className="form-group">
+      <Navbar />
+      <div className="page-center-wrapper">
+        <div className="sell-item-container">
+          <h1 className="sell-item-title">Sell an Item</h1>
+          <form onSubmit={handleSubmit} className="form-group">
 
-      <div>
-        <label className="label">Item Name</label>
-        <input
-          type="text"
-          className="input"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          required
-        />
+            <div>
+              <label className="label">Item Name</label>
+              <input
+                type="text"
+                className="input"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+              />
+            </div>
+
+            <div>
+              <label className="label">Price (₹)</label>
+              <input
+                type="number"
+                className="input"
+                value={price}
+                onChange={(e) => setPrice(e.target.value)}
+                required
+                min="0"
+              />
+            </div>
+
+            <div>
+              <label className="label">Condition</label>
+              <select
+                className="select"
+                value={condition}
+                onChange={(e) => setCondition(e.target.value)}
+              >
+                <option value="new">New</option>
+                <option value="used">Used</option>
+                <option value="refurbished">Refurbished</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="label">Category</label>
+              <select
+                className="select"
+                value={category}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  if (value === '__new__') {
+                    setIsAddingNewCategory(true);
+                    setCategory('');
+                  } else {
+                    setIsAddingNewCategory(false);
+                    setCategory(value);
+                  }
+                }}
+                required={!isAddingNewCategory}
+              >
+                <option value="">Select a category</option>
+                {categoryOptions.map((cat, i) => (
+                  <option key={i} value={cat}>
+                    {cat.replace(/_/g, ' ')}
+                  </option>
+                ))}
+                <option value="__new__">Add new category...</option>
+              </select>
+              {isAddingNewCategory && (
+                <input
+                  type="text"
+                  placeholder="Enter new category"
+                  className="input"
+                  value={newCategory}
+                  onChange={(e) => setNewCategory(e.target.value)}
+                  required={isAddingNewCategory}
+                />
+              )}
+            </div>
+
+            <button type="submit" className="submit-button">
+              Submit
+            </button>
+          </form>
+        </div>
       </div>
-
-      <div>
-        <label className="label">Price (₹)</label>
-        <input
-          type="number"
-          className="input"
-          value={price}
-          onChange={(e) => setPrice(e.target.value)}
-          required
-          min="0"
-        />
-      </div>
-
-      <div>
-        <label className="label">Condition</label>
-        <select
-          className="select"
-          value={condition}
-          onChange={(e) => setCondition(e.target.value)}
-        >
-          <option value="new">New</option>
-          <option value="used">Used</option>
-          <option value="refurbished">Refurbished</option>
-        </select>
-      </div>
-
-      <div>
-        <label className="label">Category</label>
-        <select
-          className="select"
-          value={category}
-          onChange={(e) => {
-            const value = e.target.value;
-            if (value === '__new__') {
-              setIsAddingNewCategory(true);
-              setCategory('');
-            } else {
-              setIsAddingNewCategory(false);
-              setCategory(value);
-            }
-          }}
-          required={!isAddingNewCategory}
-        >
-          <option value="">Select a category</option>
-          {categoryOptions.map((cat, i) => (
-            <option key={i} value={cat}>
-              {cat.replace(/_/g, ' ')}
-            </option>
-          ))}
-          <option value="__new__">Add new category...</option>
-        </select>
-        {isAddingNewCategory && (
-          <input
-            type="text"
-            placeholder="Enter new category"
-            className="input"
-            value={newCategory}
-            onChange={(e) => setNewCategory(e.target.value)}
-            required={isAddingNewCategory}
-          />
-        )}
-      </div>
-
-      <button type="submit" className="submit-button">
-        Submit
-      </button>
-    </form>
-  </div>
-</div>
-</div>
+    </div>
   );
 };
 

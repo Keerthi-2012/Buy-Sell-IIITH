@@ -18,6 +18,7 @@ import Profile from './components/Profile';
 import SellItem from './components/SellItem';
 import ItemDetails from './components/ItemDetails';
 import { setUser } from './redux/authslice';
+import ItemUpdate from './components/ItemUpdate';
 
 // Wrapper to allow useDispatch in the outermost App
 const AppWrapper = () => {
@@ -53,6 +54,7 @@ const appRouter = createBrowserRouter([
       { path: 'Orders', element: <Orders /> },
       { path: 'Profile', element: <Profile /> },
       { path: 'item/:id', element: <ItemDetails /> },
+      { path: "/update-item/:id", element:<ItemUpdate/>}
     ],
   },
 ]);

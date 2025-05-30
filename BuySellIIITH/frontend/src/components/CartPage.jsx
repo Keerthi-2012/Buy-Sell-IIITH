@@ -14,10 +14,7 @@ const CartPage = () => {
   const location = useLocation();
 
   useEffect(() => {
-  console.log("Redux user:", user); // <--- ADD THIS
-  console.log("Token:", token);
     if (!user || !user._id) {
-      console.log("User not logged in yet");
       setCartItems([]);
       return;
     }
@@ -32,14 +29,12 @@ const CartPage = () => {
           },
           credentials: "include",
         });
-        console.log("Token:",token);
+
         if (!res.ok) {
           throw new Error("Failed to fetch cart");
         }
 
         const data = await res.json();
-        console.log("Cart data from backend:", data);
-
         setCartItems(data.items || []);
       } catch (err) {
         console.error("Error fetching cart:", err);
@@ -50,6 +45,62 @@ const CartPage = () => {
     fetchCart();
   }, [user, location.search, token]);
 
+  // Add this handler in CartPage:
+  const handleRemoveItem = async (itemId) => {
+    try {
+      const res = await fetch("http://localhost:8000/api/v1/order/cart/remove", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ itemId }),
+        credentials: "include",
+      });
+
+      if (!res.ok) {
+        throw new Error("Failed to remove item");
+      }
+
+      const data = await res.json();
+      setCartItems(data.cart.items || []);
+    } catch (err) {
+      console.error("Error removing item:", err);
+    }
+  };
+  const handleCheckout = async () => {
+  const otp = window.prompt("Enter your OTP to proceed:");
+
+  if (!otp) {
+    alert("Checkout cancelled: OTP is required.");
+    return;
+  }
+
+  try {
+    const res = await fetch("http://localhost:8000/api/v1/order/checkoutallItems", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ otp }),
+      credentials: "include",
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      throw new Error(data.message || "Checkout failed");
+    }
+
+    alert("Checkout successful!");
+    setCartItems([]); // Clear frontend cart state
+    navigate("/orders"); // Optional: Navigate to orders page
+  } catch (err) {
+    console.error("Checkout error:", err);
+    alert("Checkout failed: " + err.message);
+  }
+};
   return (
     <div>
       <Navbar />
@@ -61,12 +112,17 @@ const CartPage = () => {
               <div className="cart-items-empty">Your cart is empty.</div>
             ) : (
               cartItems.map((ci, index) => (
-                <CartItem key={index} item={ci.item} quantity={ci.quantity} />
+                <CartItem
+                  key={index}
+                  item={ci.item}
+                  quantity={ci.quantity}
+                  onRemove={handleRemoveItem} // Pass the callback here
+                />
               ))
             )}
           </div>
           <div className="cart-sidebar">
-            <CartSummary items={cartItems} />
+            <CartSummary items={cartItems} onCheckout={handleCheckout} />
           </div>
         </div>
       </div>

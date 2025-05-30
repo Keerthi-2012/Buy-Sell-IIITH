@@ -2,7 +2,10 @@ import { Item } from '../models/item.model.js';
 
 export const createItem = async (req, res) => {
   try {
-    console.log('User from auth middleware:', req.user);
+    if (!req.user || !req.user._id) {
+      return res.status(401).json({ message: "Unauthorized: No user found." });
+    }
+
     const { name, price, description, category } = req.body;
 
     if (!name || !price || !category) {
@@ -14,8 +17,7 @@ export const createItem = async (req, res) => {
       price,
       description,
       category,
-      seller: req.user?._id || '6430f91e26a9f8404cc5bf17' // use a valid ObjectId from your DB for testing
-
+      seller: req.user._id, // ✅ Authenticated user's ID
     });
 
     const savedItem = await newItem.save();
@@ -102,6 +104,9 @@ export const updateItem = async (req, res) => {
     if (!item) {
       return res.status(404).json({ error: 'Item not found' });
     }
+
+    console.log("Item seller ID:", item.seller?.toString());
+    console.log("Authenticated user ID:", req.user?.id?.toString());
 
     if (!item.seller || !req.user || !req.user.id) {
       return res.status(403).json({ error: 'Unauthorized: Missing user or seller info' });
