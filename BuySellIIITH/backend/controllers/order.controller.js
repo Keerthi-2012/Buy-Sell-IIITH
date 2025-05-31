@@ -335,7 +335,11 @@ export const checkout = async (req, res) => {
 
     const itemsBySeller = {};
     for (const item of fetchedItems) {
-      const sellerId = item.seller._id.toString();
+      if (!item.seller || !item.seller._id) {
+  return res.status(400).json({ message: 'Item has no seller info', itemId: item._id });
+}
+const sellerId = item.seller._id.toString();
+
 
       if (sellerId === userId) {
         return res.status(400).json({ message: 'Cannot buy your own item', itemId: item._id });
