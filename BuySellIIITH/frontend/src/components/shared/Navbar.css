@@ -110,48 +110,60 @@
     width: 18rem;
     padding: 1.25rem;
     border-radius: 1rem;
-    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15);
     background-color: white;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15);
     display: flex;
     flex-direction: column;
     gap: 1rem;
 }
 
-/* Popover Header (User Info) */
+/* Popover Header */
 .popover-header {
     display: flex;
     align-items: center;
+    gap: 0.75rem;
 }
 
 .user-name {
-    padding: 10px;
-
-    font-weight: 600;
     font-size: 1rem;
+    font-weight: 600;
+    color: #111827;
+    margin: 0;
+    padding-left: 0;
 }
 
-.user-bio {
-    font-size: 0.875rem;
-    color: #6b7280;
-}
 
-/* Action items */
+/* Actions */
 .popover-actions {
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
 }
 
+/* Updated Action Item (View Profile) */
 .action-item {
     display: flex;
     align-items: center;
-    text-decoration: none;
+    justify-content: center;
     gap: 0.5rem;
+    padding: 0.6rem 1rem;
+    border-radius: 0.5rem;
     font-size: 0.9rem;
-    color: #4b5563;
+    font-weight: 500;
+    color: #6A38C2;
+    /* background-color: #f9fafb; */
+    /* border: 1px solid #e5e7eb; */
+    transition: all 0.2s ease;
     cursor: pointer;
+    text-decoration: none;
 }
 
+.action-item:hover {
+    /* background-color: #f3f4f6; */
+    color: #5729a3;
+}
+
+/* Updated Logout Button */
 .logout-btn {
     display: flex;
     align-items: center;
@@ -162,9 +174,9 @@
     font-weight: 600;
     padding: 0.6rem 1rem;
     border-radius: 0.5rem;
+    font-size: 0.9rem;
     border: none;
     cursor: pointer;
-    font-size: 0.95rem;
     transition: background-color 0.2s ease;
 }
 

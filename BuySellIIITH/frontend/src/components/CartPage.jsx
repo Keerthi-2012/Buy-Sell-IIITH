@@ -69,13 +69,6 @@ const CartPage = () => {
     }
   };
   const handleCheckout = async () => {
-  const otp = window.prompt("Enter your OTP to proceed:");
-
-  if (!otp) {
-    alert("Checkout cancelled: OTP is required.");
-    return;
-  }
-
   try {
     const res = await fetch("http://localhost:8000/api/v1/order/checkoutallItems", {
       method: "POST",
@@ -83,7 +76,6 @@ const CartPage = () => {
         Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ otp }),
       credentials: "include",
     });
 
@@ -95,12 +87,13 @@ const CartPage = () => {
 
     alert("Checkout successful!");
     setCartItems([]); // Clear frontend cart state
-    navigate("/orders"); // Optional: Navigate to orders page
+    navigate("/orders"); // Navigate to orders page
   } catch (err) {
     console.error("Checkout error:", err);
     alert("Checkout failed: " + err.message);
   }
 };
+
   return (
     <div>
       <Navbar />

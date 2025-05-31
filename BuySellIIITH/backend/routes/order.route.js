@@ -26,7 +26,7 @@ router.post('/', createOrder);
 router.patch('/complete/:transactionId',isAuthenticated, completeOrder);
 
 // Cancel an order by transactionId
-router.patch('/cancel/:transactionId', cancelOrder);
+router.patch('/cancel/:transactionId', isAuthenticated, cancelOrder);
 
 // Get all orders
 router.get('/', getAllOrders);

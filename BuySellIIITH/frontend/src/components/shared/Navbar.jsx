@@ -18,17 +18,17 @@ const Navbar = () => {
     const dispatch = useDispatch();
     const navigate = useNavigate();
     const { user } = useSelector((state) => state.auth);
-const getInitials = (firstName, lastName) => {
-    if (!firstName && !lastName) return "US";
-    const first = firstName?.[0] ?? "";
-    const second = lastName?.[0] ?? "";
-    return `${first}${second}`.toUpperCase();
-};
+    const getInitials = (firstName, lastName) => {
+        if (!firstName && !lastName) return "US";
+        const first = firstName?.[0] ?? "";
+        const second = lastName?.[0] ?? "";
+        return `${first}${second}`.toUpperCase();
+    };
 
     const handleLogout = async () => {
         dispatch(logoutUser());
-  localStorage.removeItem('token');
-  navigate('/login');
+        localStorage.removeItem('token');
+        navigate('/login');
     };
 
     return (
@@ -75,17 +75,18 @@ const getInitials = (firstName, lastName) => {
                                         </div>
                                     </div>
                                     <div className="popover-actions">
-                                        <div className="action-item">
-                                            <User2 />
-                                            <RouterLink to="/Profile">View Profile</RouterLink>
-                                        </div>
-                                        <div className="action-item">
-                                            <LogOut />
-                                            <Button variant="link" onClick={handleLogout}>Logout</Button>
-                                        </div>
+                                        <RouterLink to="/Profile" className="action-item">
+                                            <User2 size={16} />
+                                            View Profile
+                                        </RouterLink>
+                                        <button className="logout-btn" onClick={handleLogout}>
+                                            <LogOut size={16} />
+                                            Logout
+                                        </button>
                                     </div>
                                 </div>
                             </PopoverContent>
+
                         </Popover>
                     )
                 }

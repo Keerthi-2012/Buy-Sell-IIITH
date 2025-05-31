@@ -11,6 +11,7 @@ const SellItem = () => {
   const [categoryOptions, setCategoryOptions] = useState([]);
   const [isAddingNewCategory, setIsAddingNewCategory] = useState(false);
   const [newCategory, setNewCategory] = useState('');
+  const [description, setDescription] = useState('');
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -51,6 +52,7 @@ const SellItem = () => {
       price: parseFloat(price),
       condition,
       category: finalCategory,
+      description,
     };
 
     console.log('Submitting item:', itemData);
@@ -84,6 +86,8 @@ const SellItem = () => {
       setCategory('');
       setIsAddingNewCategory(false);
       setNewCategory('');
+      setDescription('');
+
     } catch (err) {
       console.error('Error submitting item:', err);
       alert(`Error: ${err.message}`);
@@ -133,7 +137,17 @@ const SellItem = () => {
                 <option value="refurbished">Refurbished</option>
               </select>
             </div>
-
+            <div>
+              <label className="label">Description</label>
+              <textarea
+                className="input"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Enter a short description of the item"
+                rows={4}
+                required
+              />
+            </div>
             <div>
               <label className="label">Category</label>
               <select

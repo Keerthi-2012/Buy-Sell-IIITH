@@ -36,15 +36,15 @@ export const createOrder = async (req, res) => {
     const generatedOtp = Math.floor(100000 + Math.random() * 900000).toString();
     const hashedOTP = await bcrypt.hash(generatedOtp, 10);
 
-const order = new Order({
-  transactionId,
-  buyer,
-  seller,
-  item,
-  amount,
-  hashedOTP,
-  otp: generatedOtp // for testing/debugging only
-});
+    const order = new Order({
+      transactionId,
+      buyer,
+      seller,
+      item,
+      amount,
+      hashedOTP,
+      otp: generatedOtp // for testing/debugging only
+    });
 
 
     const savedOrder = await order.save();
@@ -149,29 +149,42 @@ export const getUserOrders = async (req, res) => {
 export const cancelOrder = async (req, res) => {
   try {
     const { transactionId } = req.params;
+    const userId = req.user._id;  // assuming isAuthenticated sets req.user
 
+    // Find order by transactionId
     const order = await Order.findOne({ transactionId });
-    if (!order) return res.status(404).json({ message: 'Order not found' });
-
-    if (order.status === 'completed') {
-      return res.status(400).json({ message: 'Completed orders cannot be cancelled' });
+    if (!order) {
+      return res.status(404).json({ message: 'Order not found' });
     }
 
-    if (order.status === 'cancelled') {
-      return res.status(400).json({ message: 'Order is already cancelled' });
+    // Optional: Check if the user is authorized to cancel this order
+    if (order.buyer.toString() !== userId.toString()) {
+      return res.status(403).json({ message: 'Not authorized to cancel this order' });
     }
 
+    // Only cancel if order is pending (or whatever your business rule is)
+    if (order.status !== 'pending') {
+      return res.status(400).json({ message: 'Only pending orders can be cancelled' });
+    }
+
+    // Update order status to cancelled, and track who cancelled
     order.status = 'cancelled';
-    order.cancelledAt = new Date();
+    order.cancelledBy = userId; // or more detailed user info
+console.log('CancelOrder: userId:', userId);
+console.log('CancelOrder: order.buyer:', order.buyer.toString());
 
-    const cancelledOrder = await order.save();
-    res.status(200).json(cancelledOrder);
+    await order.save();
+    const populatedOrder = await Order.findById(order._id)
+      .populate('item') // adjust field names based on your schema
+      .populate('cancelledBy', 'name email') // only populate name & email from cancelledBy
+      .populate('buyer', 'name email'); // if you want buyer details too
+
+    return res.json(populatedOrder);
   } catch (error) {
-    res.status(500).json({ message: 'Failed to cancel order', error: error.message });
+    console.error('Error cancelling order:', error);
+    return res.status(500).json({ message: 'Internal server error' });
   }
 };
-
-
 
 export const addToCart = async (req, res) => {
   try {
@@ -289,18 +302,19 @@ export const removeFromCart = async (req, res) => {
 
 
 export const checkout = async (req, res) => {
-  const { items, otp } = req.body;
+  const { items } = req.body;
   const userId = req.user?._id;
+
   if (!userId) {
     return res.status(401).json({ message: 'Unauthorized: user not authenticated' });
   }
 
   try {
-    if (!userId || !items || items.length === 0) {
+    if (!items || items.length === 0) {
       return res.status(400).json({ message: 'Missing required fields' });
     }
 
-    // 🧩 Step 1: Validate all requested items are in the user's cart
+    // Step 1: Validate items exist in the user's cart
     const userCart = await Cart.findOne({ user: userId });
     if (!userCart || userCart.items.length === 0) {
       return res.status(400).json({ message: 'Cart is empty' });
@@ -316,7 +330,7 @@ export const checkout = async (req, res) => {
       });
     }
 
-    // 🧩 Step 2: Fetch item details and organize by seller
+    // Step 2: Fetch item details and group by seller
     const fetchedItems = await Item.find({ _id: { $in: items } }).populate('seller');
 
     const itemsBySeller = {};
@@ -331,14 +345,14 @@ export const checkout = async (req, res) => {
       itemsBySeller[sellerId].push(item);
     }
 
-    // 🧩 Step 3: Create orders
-    const generatedOtp = Math.floor(100000 + Math.random() * 900000).toString();
-    const hashedOTP = await bcrypt.hash(generatedOtp, 10);
+    // Step 3: Create individual orders with unique OTPs
     const orders = [];
 
     for (const sellerId in itemsBySeller) {
       for (const item of itemsBySeller[sellerId]) {
         const transactionId = uuidv4();
+        const generatedOtp = Math.floor(100000 + Math.random() * 900000).toString();
+        const hashedOTP = await bcrypt.hash(generatedOtp, 10);
 
         const order = new Order({
           transactionId,
@@ -347,28 +361,37 @@ export const checkout = async (req, res) => {
           item: item._id,
           amount: item.price,
           hashedOTP,
+          otp: generatedOtp, // ⚠️ For testing/debugging only
         });
 
         const savedOrder = await order.save();
-        orders.push({ order: savedOrder, otp: generatedOtp });
+        orders.push({
+          order: savedOrder,
+          otp: generatedOtp, // ✅ Individual OTP per order
+        });
       }
     }
 
-    // 🧩 Step 4: Remove only purchased items from the cart
+    // Step 4: Remove purchased items from cart
     await Cart.updateOne(
       { user: userId },
       { $pull: { items: { item: { $in: items } } } }
     );
 
-    res.status(201).json({ message: 'Orders placed successfully', orders });
+    res.status(201).json({
+      message: 'Orders placed successfully',
+      orders, // each with its own OTP
+    });
+
   } catch (err) {
+    console.error("Checkout error:", err);
     res.status(500).json({ message: 'Checkout failed', error: err.message });
   }
 };
 
 
+
 export const checkoutAllItems = async (req, res) => {
-  const { otp } = req.body;
   const userId = req.user?._id;
   if (!userId) {
     return res.status(401).json({ message: 'Unauthorized: user not authenticated' });
@@ -381,7 +404,7 @@ export const checkoutAllItems = async (req, res) => {
       return res.status(400).json({ message: 'Cart is empty' });
     }
 
-    // 🧩 Step 2: Fetch items and group by seller
+    // 🧩 Step 2: Group items by seller and validate
     const itemsBySeller = {};
     for (const cartItem of userCart.items) {
       const item = cartItem.item;
@@ -396,10 +419,13 @@ export const checkoutAllItems = async (req, res) => {
       itemsBySeller[sellerId].push(item);
     }
 
-    // 🧩 Step 3: Create orders
-    const hashedOTP = await bcrypt.hash(otp, 10);
+    // 🧩 Step 3: Generate OTP
+    const generatedOtp = Math.floor(100000 + Math.random() * 900000).toString();
+    const hashedOTP = await bcrypt.hash(generatedOtp, 10);
+
     const orders = [];
 
+    // 🧩 Step 4: Create orders
     for (const sellerId in itemsBySeller) {
       for (const item of itemsBySeller[sellerId]) {
         const transactionId = uuidv4();
@@ -411,6 +437,7 @@ export const checkoutAllItems = async (req, res) => {
           item: item._id,
           amount: item.price,
           hashedOTP,
+          otp: generatedOtp, // for internal visibility/testing/debugging
         });
 
         const savedOrder = await order.save();
@@ -418,14 +445,19 @@ export const checkoutAllItems = async (req, res) => {
       }
     }
 
-    // 🧩 Step 4: Clear the user's cart
+    // 🧩 Step 5: Clear the cart
     await Cart.updateOne({ user: userId }, { $set: { items: [] } });
 
-    res.status(201).json({ message: 'All items checked out successfully', orders });
+    res.status(201).json({
+      message: 'All items checked out successfully',
+      orders,
+      otp: generatedOtp // 🔑 Return to buyer so they can give to seller for order completion
+    });
   } catch (err) {
     res.status(500).json({ message: 'Checkout failed', error: err.message });
   }
 };
+
 
 
 export const getPlacedOrders = async (req, res) => {
@@ -454,20 +486,14 @@ export const getSoldOrders = async (req, res) => {
 export const getCancelledOrders = async (req, res) => {
   const { userId } = req.params;
   try {
-    const orders = await Order.find({
-      seller: userId,
-      status: 'cancelled'
-    }).populate('item buyer');
-const enrichedOrders = orders.map(order => ({
-  ...order.toObject(),
-  itemName: order.item?.name || 'Unnamed Item',
-}));
-
-res.json(enrichedOrders);
+    const orders = await Order.find({ buyer: userId, status: 'cancelled' })
+      .populate('item seller cancelledBy');  // populate item, seller, and cancelledBy references
+    res.json(orders);
   } catch (err) {
-    res.status(500).json({ message: 'Failed to fetch orders', error: err.message });
+    res.status(500).json({ message: 'Failed to fetch cancelled orders', error: err.message });
   }
 };
+
 
 
 export const verifyDeliveryOTP = async (req, res) => {

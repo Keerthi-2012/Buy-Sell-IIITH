@@ -31,9 +31,9 @@
 
 .cart-summary button {
   width: 100%;
-  background-color: #2563eb; /* bg-blue-600 */
+  background-color: #7c3aed; /* bg-blue-600 */
   color: white;
-  padding: 0.5rem 0;
+  padding: 1rem 0;
   border-radius: 0.5rem;
   border: none;
   cursor: pointer;
@@ -41,5 +41,5 @@
 }
 
 .cart-summary button:hover {
-  background-color: #1e40af;
+  background-color: #6d28d9;
 }

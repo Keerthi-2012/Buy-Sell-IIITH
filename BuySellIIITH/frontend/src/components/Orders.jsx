@@ -5,20 +5,18 @@ import './Orders.css';
 
 const OrderCard = ({ order, showOtp = false, isCancelled = false, onComplete, onCancel }) => (
   <div className="order-card">
-    <h2>{order.item?.name || order.itemName || 'Unnamed Item'}</h2>
+    <h2>{order.item?.name ?? order.itemName ?? 'Unnamed Item'}</h2>
     <p>Status: {order.status}</p>
     {showOtp && <p className="otp">Delivery OTP: {order.otp || 'Not Available'}</p>}
-    {isCancelled && <p>Cancelled by: {order.cancelledBy?.name || 'Unknown'}</p>}
+    {isCancelled && (
+      <p>
+        Cancelled by: {order.cancelledBy?.name ?? order.cancelledBy?.email ?? 'Unknown'}
+      </p>
+    )}
 
     {order.status === 'pending' && onCancel && (
       <button className="cancel-btn" onClick={() => onCancel(order.transactionId)}>
         Cancel Order
-      </button>
-    )}
-
-    {order.status === 'pending' && onComplete && (
-      <button className="complete-btn" onClick={() => onComplete(order.transactionId)}>
-        Mark as Completed
       </button>
     )}
   </div>
@@ -125,9 +123,14 @@ const Orders = () => {
   };
 
   const handleCancelOrder = async (transactionId) => {
+    const token = localStorage.getItem('token');
     try {
       const res = await fetch(`http://localhost:8000/api/v1/order/cancel/${transactionId}`, {
         method: 'PATCH',
+          headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`, // ✅ Send token for backend to authenticate
+        },
         credentials: 'include',
       });
 
@@ -141,6 +144,7 @@ const Orders = () => {
 
       setPendingOrders((prev) => prev.filter((o) => o.transactionId !== transactionId));
       setCancelledOrders((prev) => [cancelledOrder, ...prev]);
+      setActiveTab('cancelled');
     } catch (error) {
       console.error('Error cancelling order:', error);
       alert('Something went wrong!');

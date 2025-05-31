@@ -5,12 +5,6 @@ import './Profile.css';
 import axios from 'axios';
 import { setUser } from '@/redux/authslice';
 
-const getAverageRating = (reviews) => {
-  if (!reviews || reviews.length === 0) return 0;
-  const total = reviews.reduce((sum, r) => sum + r.rating, 0);
-  return (total / reviews.length).toFixed(1);
-};
-
 const Profile = () => {
   const user = useSelector((state) => state.auth.user);
   const dispatch = useDispatch();
@@ -35,8 +29,8 @@ const Profile = () => {
         }
       });
 
-      dispatch(setUser(res.data.user)); // Update Redux state
-      setEditMode(false); // Exit edit mode
+      dispatch(setUser(res.data.user));
+      setEditMode(false);
     } catch (err) {
       console.error('Profile update failed:', err.response?.data || err.message);
     }
@@ -52,9 +46,6 @@ const Profile = () => {
       </div>
     );
   }
-
-  const avgRating = getAverageRating(user.sellerReviews);
-  const reviewsCount = user.sellerReviews?.length || 0;
 
   return (
     <div>
@@ -100,33 +91,6 @@ const Profile = () => {
                 <p><span className="font-semibold">Contact Number:</span> {user.contactNumber}</p>
               </>
             )}
-
-            <div className="reviews">
-              <h2 className="section-title">Seller Reviews</h2>
-              {reviewsCount > 0 ? (
-                <p>Average Rating: <span className="font-bold">{avgRating} / 5</span> ({reviewsCount} reviews)</p>
-              ) : (
-                <p>No reviews yet.</p>
-              )}
-            </div>
-
-            <div className="reviews">
-              <h2 className="section-title">Activity Stats</h2>
-              <div className="activity-grid">
-                <div className="activity-card">
-                  <p className="activity-number">{user.stats?.itemsBought || 0}</p>
-                  <p className="activity-label">Items Bought</p>
-                </div>
-                <div className="activity-card">
-                  <p className="activity-number">{user.stats?.itemsSold || 0}</p>
-                  <p className="activity-label">Items Sold</p>
-                </div>
-                <div className="activity-card">
-                  <p className="activity-number">{user.stats?.pendingOrders || 0}</p>
-                  <p className="activity-label">Pending Orders</p>
-                </div>
-              </div>
-            </div>
           </div>
         </div>
 
