@@ -63,8 +63,13 @@ app.use(session({
   }
 }));
 // API routes
+console.log("Mounting user routes...");
 app.use("/api/v1/user", userRoutes);
+
+console.log("Mounting item routes...");
 app.use("/api/v1/item", itemRoutes);
+
+console.log("Mounting order routes...");
 app.use("/api/v1/order", orderRoutes);
 
 // ---------------------------
