@@ -1,5 +1,4 @@
 import express from 'express';
-
 import {
   createItem,
   getAllItems,
@@ -8,23 +7,20 @@ import {
   updateItem,
   deleteItem
 } from '../controllers/item.controller.js';
-
 import isAuthenticated from '../middleware/isAuthenticated.js';
 
 const router = express.Router();
 
 // Public routes
-router.route('/').get(getAllItems);          // GET /api/items - get all items
-router.get('/categories', getItemCategories); // GET /api/v1/item/categories
-
-router.route('/:id').get(getItemById);       // GET /api/items/:id - get a specific item
-
-// In item.routes.js
-
+router.get('/', getAllItems);                     // ✅ GET /api/items
+router.get('/categories', getItemCategories);     // ✅ GET /api/items/categories
 
 // Protected routes
-router.route('/create').post(isAuthenticated, createItem);         // POST /api/items/create - create new item
-router.route('/update/:id').put(isAuthenticated, updateItem);      // PUT /api/items/update/:id - update item
-router.route('/delete/:id').delete(isAuthenticated, deleteItem);   // DELETE /api/items/delete/:id - delete item
+router.post('/create', isAuthenticated, createItem);         // ✅ POST /api/items/create
+router.put('/update/:id', isAuthenticated, updateItem);      // ✅ PUT /api/items/update/:id
+router.delete('/delete/:id', isAuthenticated, deleteItem);   // ✅ DELETE /api/items/delete/:id
+
+// ⚠️ Move this to the end
+router.get('/:id', getItemById);       // ✅ GET /api/items/:id
 
 export default router;
