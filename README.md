@@ -2,7 +2,7 @@
 
 A dedicated Buy-Sell web portal built using the MERN stack for the IIIT Hyderabad community. This platform allows users to list items for sale, browse listings, add to cart, place orders with OTP verification, and manage transactions securely.
 
-## 🔧 MERN Stack
+## MERN Stack
 
 - **Frontend**: React.js (with optional libraries like Tailwind CSS, MUI)
 - **Backend**: Express.js with Node.js
@@ -11,9 +11,9 @@ A dedicated Buy-Sell web portal built using the MERN stack for the IIIT Hyderaba
 
 ---
 
-## 🧑‍💻 Features
+## Features
 
-### 👥 User Authentication
+### User Authentication
 
 - Registration with IIIT email only
 - Login with session persistence (until logout)
@@ -21,20 +21,20 @@ A dedicated Buy-Sell web portal built using the MERN stack for the IIIT Hyderaba
 - JWT-based route protection
 - Optional: Google ReCAPTCHA, CAS Login
 
-### 👤 User Model Includes
+### User Model Includes
 
 - First Name, Last Name, Email (IIIT only)
 - Age, Contact Number
 - Password (hashed)
 - Cart (array of item IDs)
 
-### 🛍️ Item Model Includes
+### Item Model Includes
 
 - Name, Price, Description
 - Category (e.g., clothing, grocery)
 - Seller ID
 
-### 📦 Order Model Includes
+### Order Model Includes
 
 - Transaction ID
 - Buyer ID, Seller ID
@@ -43,7 +43,7 @@ A dedicated Buy-Sell web portal built using the MERN stack for the IIIT Hyderaba
 
 ---
 
-## 🔎 Pages & Use Cases
+## Pages & Use Cases
 
 ### 1. **Dashboard + Navbar**
 - Navbar persists across all internal pages
