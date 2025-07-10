@@ -1,3 +1,5 @@
 front/
 
 final_frontend
+frontend/.env
+backend/.env
