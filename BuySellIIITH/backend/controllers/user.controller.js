@@ -209,7 +209,7 @@ export const updateProfile = async (req, res) => {
 export const casLogin = async (req, res) => {
   try {
     const { ticket } = req.query;
-    const service = 'http://localhost:5174/cas-callback'; // Must match what's sent to CAS
+    const service = process.env.CAS_CALLBACK_URL; // Must match what's sent to CAS
 
     const validateUrl = `https://login.iiit.ac.in/cas/serviceValidate?ticket=${ticket}&service=${encodeURIComponent(service)}`;
     const response = await axios.get(validateUrl);

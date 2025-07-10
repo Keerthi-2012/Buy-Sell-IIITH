@@ -8,7 +8,7 @@ export const FilterCard = ({ onFilterChange }) => {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const res = await fetch('http://localhost:8000/api/v1/item/categories');
+        const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/item/categories`);
         const data = await res.json();
         setCategories(data);
       } catch (err) {

@@ -2,10 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Navbar from './shared/Navbar';
 
-
 const ItemUpdate = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const API_BASE = import.meta.env.VITE_API_BASE_URL;
 
   const [itemData, setItemData] = useState({
     name: '',
@@ -18,7 +18,7 @@ const ItemUpdate = () => {
   useEffect(() => {
     const fetchItem = async () => {
       try {
-        const res = await fetch(`http://localhost:8000/api/v1/item/${id}`);
+        const res = await fetch(`${API_BASE}/item/${id}`);
         if (!res.ok) throw new Error('Failed to fetch item');
         const data = await res.json();
         setItemData({
@@ -42,8 +42,8 @@ const ItemUpdate = () => {
     e.preventDefault();
     setError('');
     try {
-      const res = await fetch(`http://localhost:8000/api/v1/item/update/${id}`, {
-        method: 'PUT', // or PATCH if you prefer partial updates
+      const res = await fetch(`${API_BASE}/item/update/${id}`, {
+        method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${localStorage.getItem('token')}`,
@@ -59,7 +59,7 @@ const ItemUpdate = () => {
       }
 
       alert('Item updated successfully!');
-      navigate(`/item/${id}`); // go back to item details page
+      navigate(`/item/${id}`);
     } catch (err) {
       setError(err.message);
     }
@@ -67,30 +67,30 @@ const ItemUpdate = () => {
 
   return (
     <div>
-    <Navbar />
-    <div className="update-item-container">
-      <h2>Update Item</h2>
-      {error && <div className="error-message">{error}</div>}
-      <form onSubmit={handleSubmit}>
-        <label>
-          Name:
-          <input type="text" name="name" value={itemData.name} onChange={handleChange} required />
-        </label>
-        <label>
-          Category:
-          <input type="text" name="category" value={itemData.category} onChange={handleChange} required />
-        </label>
-        <label>
-          Price:
-          <input type="number" name="price" value={itemData.price} onChange={handleChange} required min="0" />
-        </label>
-        <label>
-          Description:
-          <textarea name="description" value={itemData.description} onChange={handleChange} required />
-        </label>
-        <button type="submit" className="button button-update-item">Update</button>
-      </form>
-    </div>
+      <Navbar />
+      <div className="update-item-container">
+        <h2>Update Item</h2>
+        {error && <div className="error-message">{error}</div>}
+        <form onSubmit={handleSubmit}>
+          <label>
+            Name:
+            <input type="text" name="name" value={itemData.name} onChange={handleChange} required />
+          </label>
+          <label>
+            Category:
+            <input type="text" name="category" value={itemData.category} onChange={handleChange} required />
+          </label>
+          <label>
+            Price:
+            <input type="number" name="price" value={itemData.price} onChange={handleChange} required min="0" />
+          </label>
+          <label>
+            Description:
+            <textarea name="description" value={itemData.description} onChange={handleChange} required />
+          </label>
+          <button type="submit" className="button button-update-item">Update</button>
+        </form>
+      </div>
     </div>
   );
 };

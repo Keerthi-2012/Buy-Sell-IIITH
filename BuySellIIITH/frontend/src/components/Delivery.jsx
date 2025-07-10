@@ -6,7 +6,7 @@ import './Delivery.css';
 const DeliveryCard = ({ order, onComplete }) => {
   const [otpInput, setOtpInput] = useState('');
   const [error, setError] = useState('');
-  const token = localStorage.getItem('token'); // or get it from Redux
+  const token = localStorage.getItem('token');
 
   const handleComplete = async () => {
     if (!otpInput) {
@@ -15,11 +15,11 @@ const DeliveryCard = ({ order, onComplete }) => {
     }
 
     try {
-      const res = await fetch('http://localhost:8000/api/v1/order/verify-delivery', {
+      const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/order/verify-delivery`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`,
+          'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify({
           transactionId: order.transactionId,
@@ -33,7 +33,7 @@ const DeliveryCard = ({ order, onComplete }) => {
         setError(data.message || 'Failed to verify OTP');
       } else {
         setError('');
-        onComplete(order.transactionId); // You may also refresh or refetch orders here
+        onComplete(order.transactionId);
       }
     } catch (err) {
       setError('Something went wrong. Please try again.');
@@ -44,7 +44,6 @@ const DeliveryCard = ({ order, onComplete }) => {
     <div className="delivery-card">
       <h2>{order.item?.name || 'Unnamed Item'}</h2>
       <p>Price: ₹{order.item?.price}</p>
-      {/* <p>Buyer: {order.buyer?.name || order.buyerName || 'Unknown'}</p> */}
 
       <div className="otp-section">
         <input
@@ -71,7 +70,7 @@ const DeliveryPage = () => {
 
       try {
         setLoading(true);
-        const soldRes = await fetch(`http://localhost:8000/api/v1/order/sold/${user._id}`, {
+        const soldRes = await fetch(`${import.meta.env.VITE_API_BASE_URL}/order/sold/${user._id}`, {
           credentials: 'include',
         });
         const soldData = await soldRes.json();
@@ -87,7 +86,9 @@ const DeliveryPage = () => {
   }, [user]);
 
   const handleDeliveryComplete = (transactionId) => {
-    setDeliveryOrders((prev) => prev.filter((order) => order.transactionId !== transactionId));
+    setDeliveryOrders((prev) =>
+      prev.filter((order) => order.transactionId !== transactionId)
+    );
   };
 
   return (

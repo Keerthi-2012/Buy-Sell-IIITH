@@ -15,6 +15,7 @@ const Profile = () => {
     age: user?.age || '',
     contactNumber: user?.contactNumber || ''
   });
+  const API_BASE = import.meta.env.VITE_API_BASE_URL;
 
   const handleChange = (e) => {
     setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
@@ -23,7 +24,7 @@ const Profile = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const res = await axios.put('http://localhost:8000/api/v1/user/update', formData, {
+      const res = await axios.put('${API_BASE}/user/update', formData, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem('token')}`
         }

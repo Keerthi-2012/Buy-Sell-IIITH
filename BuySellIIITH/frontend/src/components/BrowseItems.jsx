@@ -5,6 +5,7 @@ import { FilterCard } from './FilterCard';
 import { Item } from './Item';
 import { Search } from 'lucide-react';
 import './BrowseItems.css'; // 🔹 CSS Import
+import { API_BASE } from '../utils/api'; 
 
 const BrowseItems = () => {
   const [query, setQuery] = useState('');
@@ -44,7 +45,7 @@ const BrowseItems = () => {
   useEffect(() => {
     const fetchItems = async () => {
       try {
-        let url = 'http://localhost:8000/api/v1/item';
+        let url =  `${API_BASE}/item`;
         const queryParams = new URLSearchParams();
 
         if (searchQuery) queryParams.append('search', searchQuery);

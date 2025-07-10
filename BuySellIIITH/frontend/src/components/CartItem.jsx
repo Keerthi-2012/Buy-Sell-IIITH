@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './CartItem.css';
+import { API_BASE } from '../utils/api'; // ✅ Import base URL
 
 export const CartItem = ({ item, quantity, onRemove }) => {
   const [loading, setLoading] = useState(false);
@@ -15,7 +16,7 @@ export const CartItem = ({ item, quantity, onRemove }) => {
       setLoading(true);
       const token = localStorage.getItem("token");
 
-      const res = await fetch("http://localhost:8000/api/v1/order/checkout", {
+      const res = await fetch(`${API_BASE}/order/checkout`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -23,7 +24,7 @@ export const CartItem = ({ item, quantity, onRemove }) => {
         },
         body: JSON.stringify({
           items: [item._id],
-          otp: "000000", // Hardcoded OTP for testing
+          otp: "000000",
         }),
       });
 

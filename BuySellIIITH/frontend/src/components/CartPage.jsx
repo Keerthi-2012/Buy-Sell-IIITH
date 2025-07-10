@@ -5,6 +5,7 @@ import Navbar from "./shared/Navbar";
 import { CartItem } from "./CartItem";
 import { CartSummary } from "./CartSummary";
 import "./CartPage.css";
+import { API_BASE } from "../utils/api"; // ✅ Import base API URL
 
 const CartPage = () => {
   const user = useSelector((state) => state.auth.user);
@@ -21,7 +22,7 @@ const CartPage = () => {
 
     const fetchCart = async () => {
       try {
-        const res = await fetch("http://localhost:8000/api/v1/order/cart", {
+        const res = await fetch(`${API_BASE}/order/cart`, {
           method: "GET",
           headers: {
             Authorization: `Bearer ${token}`,
@@ -45,10 +46,9 @@ const CartPage = () => {
     fetchCart();
   }, [user, location.search, token]);
 
-  // Add this handler in CartPage:
   const handleRemoveItem = async (itemId) => {
     try {
-      const res = await fetch("http://localhost:8000/api/v1/order/cart/remove", {
+      const res = await fetch(`${API_BASE}/order/cart/remove`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -68,31 +68,32 @@ const CartPage = () => {
       console.error("Error removing item:", err);
     }
   };
+
   const handleCheckout = async () => {
-  try {
-    const res = await fetch("http://localhost:8000/api/v1/order/checkoutallItems", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-      credentials: "include",
-    });
+    try {
+      const res = await fetch(`${API_BASE}/order/checkoutallItems`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+      });
 
-    const data = await res.json();
+      const data = await res.json();
 
-    if (!res.ok) {
-      throw new Error(data.message || "Checkout failed");
+      if (!res.ok) {
+        throw new Error(data.message || "Checkout failed");
+      }
+
+      alert("Checkout successful!");
+      setCartItems([]); // Clear frontend cart state
+      navigate("/orders");
+    } catch (err) {
+      console.error("Checkout error:", err);
+      alert("Checkout failed: " + err.message);
     }
-
-    alert("Checkout successful!");
-    setCartItems([]); // Clear frontend cart state
-    navigate("/orders"); // Navigate to orders page
-  } catch (err) {
-    console.error("Checkout error:", err);
-    alert("Checkout failed: " + err.message);
-  }
-};
+  };
 
   return (
     <div>
@@ -109,7 +110,7 @@ const CartPage = () => {
                   key={index}
                   item={ci.item}
                   quantity={ci.quantity}
-                  onRemove={handleRemoveItem} // Pass the callback here
+                  onRemove={handleRemoveItem}
                 />
               ))
             )}

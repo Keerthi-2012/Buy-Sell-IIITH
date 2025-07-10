@@ -18,12 +18,12 @@ const Login = () => {
     email: '',
     password: ''
   });
+const API_BASE = import.meta.env.VITE_API_BASE_URL;
+const CAS_CALLBACK_URL = import.meta.env.VITE_CAS_CALLBACK;
 
 const handleCasLogin = () => {
-  const serviceUrl = encodeURIComponent('http://localhost:5174/cas-callback');
-window.location.href = `https://login.iiit.ac.in/cas/login?service=${encodeURIComponent('http://localhost:5174/cas-callback')}`;
-
-
+  const serviceUrl = encodeURIComponent(CAS_CALLBACK_URL);
+  window.location.href = `https://login.iiit.ac.in/cas/login?service=${serviceUrl}`;
 };
 
   const changeEventHandler = (e) => {

@@ -52,7 +52,7 @@ const Orders = () => {
   const [placedOrders, setPlacedOrders] = useState([]);
   const [cancelledOrders, setCancelledOrders] = useState([]);
   const [loading, setLoading] = useState(true);
-
+  const API_BASE = import.meta.env.VITE_API_BASE_URL;
   useEffect(() => {
     const fetchOrders = async () => {
       if (!user || !user._id) return;
@@ -61,13 +61,13 @@ const Orders = () => {
         setLoading(true);
 
         const [pendingRes, placedRes, cancelledRes] = await Promise.all([
-          fetch(`http://localhost:8000/api/v1/order/`, {
+          fetch(`${API_BASE}/order/`, {
             credentials: 'include',
           }),
-          fetch(`http://localhost:8000/api/v1/order/placed/${user._id}`, {
+          fetch(`${API_BASE}/order/placed/${user._id}`, {
             credentials: 'include',
           }),
-          fetch(`http://localhost:8000/api/v1/order/cancelled/${user._id}`, {
+          fetch(`${API_BASE}/order/cancelled/${user._id}`, {
             credentials: 'include',
           }),
         ]);
@@ -101,7 +101,7 @@ const Orders = () => {
 
   const handleCompleteOrder = async (transactionId) => {
     try {
-      const res = await fetch(`http://localhost:8000/api/v1/order/complete/${transactionId}`, {
+      const res = await fetch(`${API_BASE}/order/complete/${transactionId}`, {
         method: 'PATCH',
         credentials: 'include',
       });
@@ -125,7 +125,7 @@ const Orders = () => {
   const handleCancelOrder = async (transactionId) => {
     const token = localStorage.getItem('token');
     try {
-      const res = await fetch(`http://localhost:8000/api/v1/order/cancel/${transactionId}`, {
+      const res = await fetch(`${API_BASE}/order/cancel/${transactionId}`, {
         method: 'PATCH',
           headers: {
           'Content-Type': 'application/json',

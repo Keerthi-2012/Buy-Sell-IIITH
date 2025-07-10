@@ -24,12 +24,13 @@ const Navbar = () => {
         const second = lastName?.[0] ?? "";
         return `${first}${second}`.toUpperCase();
     };
-
+      const API_BASE = import.meta.env.VITE_API_BASE_URL;
+const CLIENT_BASE = import.meta.env.VITE_CLIENT_BASE_URL;
     const handleLogout = async () => {
         dispatch(logoutUser());
         localStorage.removeItem('token');
-        const redirectAfterLogout = encodeURIComponent("http://localhost:5174/");
-        window.location.href = `https://login.iiit.ac.in/cas/logout?service=${redirectAfterLogout}`;
+        const redirectAfterLogout = encodeURIComponent(CLIENT_BASE);
+    window.location.href = `https://login.iiit.ac.in/cas/logout?service=${redirectAfterLogout}`;
         navigate('/login');
     };
 

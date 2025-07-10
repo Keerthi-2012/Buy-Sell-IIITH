@@ -13,11 +13,12 @@ const SellItem = () => {
   const [newCategory, setNewCategory] = useState('');
   const [description, setDescription] = useState('');
   const navigate = useNavigate();
+  const API_BASE = import.meta.env.VITE_API_BASE_URL;
 
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const res = await fetch('http://localhost:8000/api/v1/item/categories');
+        const res = await fetch('${API_BASE}/item/categories');
         const data = await res.json();
         setCategoryOptions(data);
       } catch (err) {
@@ -59,7 +60,7 @@ const SellItem = () => {
 
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch('http://localhost:8000/api/v1/item/create', {
+      const res = await fetch('${API_BASE}/item/create', {
         method: 'POST',
         credentials: 'include',
         headers: {
