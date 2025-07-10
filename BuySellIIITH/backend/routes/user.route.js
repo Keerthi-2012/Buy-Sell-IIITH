@@ -20,6 +20,6 @@ router.get('/profile', isAuthenticated, getProfile);
 router.route('/update').put(isAuthenticated, updateProfile);
 
 // 🟢 CAS login route
-router.route('/cas-login').get(cas.bounce, casLogin);
+router.get('/cas-login', casLogin);
 
 export default router;

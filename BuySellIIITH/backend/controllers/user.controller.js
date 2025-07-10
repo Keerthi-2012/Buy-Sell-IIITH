@@ -2,14 +2,16 @@ import { User } from '../models/user.model.js';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import axios from "axios";
-import CASAuthentication from 'cas-authentication';
+import { parseStringPromise } from 'xml2js';
+
+// import CASAuthentication from 'cas-authentication';
 
 // Setup CAS instance
-const cas = new CASAuthentication({
-  cas_url: "https://login.iiit.ac.in/cas",
-  service_url: "http://localhost:8000/api/v1/user/cas-login", // frontend should redirect to this
-  cas_version: "3.0"
-});
+// const cas = new CASAuthentication({
+//   cas_url: "https://login.iiit.ac.in/cas",
+//   service_url: "http://localhost:8000/api/v1/user/cas-login", // frontend should redirect to this
+//   cas_version: "3.0"
+// });
 
 // REGISTER
 // REGISTER
@@ -203,48 +205,75 @@ export const updateProfile = async (req, res) => {
 };
 
 // CAS LOGIN
-export const casLogin = [cas.bounce, async (req, res) => {
+// NEW CAS login controller
+export const casLogin = async (req, res) => {
   try {
-    const casUsername = req.session[cas.session_name]; // e.g., abcd123
-    const email = `${casUsername}@iiit.ac.in`;
+    const { ticket } = req.query;
+    const service = 'http://localhost:5174/cas-callback'; // Must match what's sent to CAS
 
-    let user = await User.findOne({ email });
+    const validateUrl = `https://login.iiit.ac.in/cas/serviceValidate?ticket=${ticket}&service=${encodeURIComponent(service)}`;
+    const response = await axios.get(validateUrl);
+    const xml = response.data;
 
-    if (!user) {
-      user = new User({
-        firstName: casUsername,
-        lastName: "",
-        email,
-        age: 0,
-        contactNumber: "",
-        passwordHash: "" // no password
-      });
-      await user.save();
+    const parsed = await parseStringPromise(xml);
+    const success = parsed['cas:serviceResponse']?.['cas:authenticationSuccess'];
+
+    if (!success) {
+      return res.status(401).json({ message: 'CAS validation failed' });
     }
 
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: "7d" });
+    const username = success[0]['cas:user'][0];
+    const email = username.includes('@') ? username : `${username}@iiit.ac.in`;
 
-    res.cookie("token", token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-    });
+    let firstName = '';
+    let lastName = '';
 
-    res.status(200).json({
-      message: "Logged in via CAS",
+    if (username.includes('@')) {
+      const [namePart] = username.split('@');
+      const parts = namePart.split('.');
+      firstName = parts[0]?.charAt(0).toUpperCase() + parts[0]?.slice(1);
+      lastName = parts[1]?.charAt(0).toUpperCase() + parts[1]?.slice(1);
+    } else {
+      firstName = username;
+      lastName = '';
+    }
+
+    // Check if user already exists
+    let user = await User.findOne({ email });
+    if (!user) {
+      // If not, create a new one with dummy details (you can customize this)
+      user = await User.create({
+        firstName,
+        lastName,
+        email,
+        age: 0,
+        contactNumber: '',
+        passwordHash: await bcrypt.hash('casuser', 10)
+      });
+    }
+
+    // Generate real JWT token
+    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
+
+    res.cookie("token", token, COOKIE_OPTIONS);
+
+    return res.status(200).json({
+      success: true,
+      token,
       user: {
-        id: user._id,
+        _id: user._id,
+        firstName: user.firstName,
+        lastName: user.lastName,
         email: user.email,
-        name: user.firstName
-      }
+      },
+      message: "CAS login successful"
     });
-  } catch (err) {
-    console.error("CAS Login Error:", err);
-    res.status(500).json({ message: "CAS login failed" });
-  }
-}];
 
+  } catch (error) {
+    console.error("CAS login error:", error);
+    return res.status(500).json({ message: 'Internal server error during CAS login' });
+  }
+};
 
 // GET PROFILE
 export const getProfile = async (req, res) => {
