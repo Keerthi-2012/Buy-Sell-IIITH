@@ -44,7 +44,7 @@ const DeliveryCard = ({ order, onComplete }) => {
     <div className="delivery-card">
       <h2>{order.item?.name || 'Unnamed Item'}</h2>
       <p>Price: ₹{order.item?.price}</p>
-      <p>Buyer: {order.buyer?.name || order.buyerName || 'Unknown'}</p>
+      {/* <p>Buyer: {order.buyer?.name || order.buyerName || 'Unknown'}</p> */}
 
       <div className="otp-section">
         <input

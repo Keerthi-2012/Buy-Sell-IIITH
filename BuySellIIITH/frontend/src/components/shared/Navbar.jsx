@@ -28,6 +28,8 @@ const Navbar = () => {
     const handleLogout = async () => {
         dispatch(logoutUser());
         localStorage.removeItem('token');
+        const redirectAfterLogout = encodeURIComponent("http://localhost:5174/");
+        window.location.href = `https://login.iiit.ac.in/cas/logout?service=${redirectAfterLogout}`;
         navigate('/login');
     };
 

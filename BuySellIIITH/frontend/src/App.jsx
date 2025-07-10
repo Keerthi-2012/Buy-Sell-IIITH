@@ -20,6 +20,7 @@ import ItemDetails from './components/ItemDetails';
 import { setUser } from './redux/authslice';
 import ItemUpdate from './components/ItemUpdate';
 import DeliveryPage from './components/Delivery';
+import CasCallback from './components/auth/CasCallback';
 
 // Wrapper to allow useDispatch in the outermost App
 const AppWrapper = () => {
@@ -48,6 +49,7 @@ const appRouter = createBrowserRouter([
     children: [
       { index: true, element: <Home /> },
       { path: 'Login', element: <Login /> },
+      { path: 'cas-callback', element: <CasCallback /> },
       { path: 'Register', element: <Register /> },
       { path: 'BrowseItems', element: <BrowseItems /> },
       { path: 'SellItem', element: <SellItem /> },

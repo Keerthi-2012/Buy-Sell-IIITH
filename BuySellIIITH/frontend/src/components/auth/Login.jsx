@@ -19,10 +19,12 @@ const Login = () => {
     password: ''
   });
 
-  const handleCasLogin = () => {
-    const serviceUrl = encodeURIComponent('https://your-frontend-domain.com/cas-callback');
-    window.location.href = `https://login.iiit.ac.in/cas/login?service=${serviceUrl}`;
-  };
+const handleCasLogin = () => {
+  const serviceUrl = encodeURIComponent('http://localhost:5174/cas-callback');
+window.location.href = `https://login.iiit.ac.in/cas/login?service=${encodeURIComponent('http://localhost:5174/cas-callback')}`;
+
+
+};
 
   const changeEventHandler = (e) => {
     setInput({
@@ -104,7 +106,7 @@ const Login = () => {
               name="email"
               type="email"
               value={input.email}
-              placeholder="your-email@iiit.ac.in"
+              // placeholder="your-email@iiit.ac.in"
               onChange={changeEventHandler}
               disabled={loading}
               required
@@ -118,7 +120,7 @@ const Login = () => {
               name="password"
               type="password"
               value={input.password}
-              placeholder="Enter your password"
+              // placeholder="Enter your password"
               onChange={changeEventHandler}
               disabled={loading}
               required
