@@ -10,6 +10,8 @@ import connectDB from "./utils/db.js";
 import userRoutes from "./routes/user.route.js";
 import itemRoutes from "./routes/item.route.js";
 import orderRoutes from "./routes/order.route.js";
+import MongoStore from "connect-mongo";
+
 
 // Load environment variables
 dotenv.config();
@@ -47,9 +49,19 @@ app.use(cors({
 app.use(session({
   secret: process.env.SESSION_SECRET || "your-session-secret",
   resave: false,
-  saveUninitialized: true,
+  saveUninitialized: false,
+  store: MongoStore.create({
+    mongoUrl: process.env.MONGO_URI,
+    ttl: 14 * 24 * 60 * 60, // 14 days
+    autoRemove: 'native',
+  }),
+  cookie: {
+    maxAge: 14 * 24 * 60 * 60 * 1000, // 14 days
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production", // Use HTTPS in production
+    sameSite: "lax",
+  }
 }));
-
 // API routes
 app.use("/api/v1/user", userRoutes);
 app.use("/api/v1/item", itemRoutes);
