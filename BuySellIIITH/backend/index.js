@@ -74,10 +74,17 @@ if (process.env.NODE_ENV === "production") {
   const distPath = path.join(__dirname, "../frontend/dist");
   app.use(express.static(distPath));
 
-  app.get("*", (req, res) => {
+  // Only serve frontend HTML for known file types or actual frontend routes
+  app.get("*", (req, res, next) => {
+    if (req.originalUrl.startsWith("/api")) {
+      // Not a frontend route – move on
+      return next();
+    }
+
     res.sendFile(path.join(distPath, "index.html"));
   });
 }
+
 
 // Connect to DB and start server
 const PORT = process.env.PORT || 8000;
