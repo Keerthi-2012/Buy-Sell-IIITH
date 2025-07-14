@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Navbar from './shared/Navbar';
+import './ItemUpdate.css';
 
 const ItemUpdate = () => {
   const { id } = useParams();
