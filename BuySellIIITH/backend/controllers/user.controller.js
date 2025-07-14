@@ -208,8 +208,11 @@ export const updateProfile = async (req, res) => {
 // NEW CAS login controller
 export const casLogin = async (req, res) => {
   try {
-    const { ticket } = req.query;
-    const service = process.env.CAS_CALLBACK_URL; // Must match what's sent to CAS
+    const { ticket, service } = req.query;
+
+    if (!ticket || !service) {
+      return res.status(400).json({ message: 'Missing CAS ticket or service URL.' });
+    }
 
     const validateUrl = `https://login.iiit.ac.in/cas/serviceValidate?ticket=${ticket}&service=${encodeURIComponent(service)}`;
     const response = await axios.get(validateUrl);
@@ -225,9 +228,7 @@ export const casLogin = async (req, res) => {
     const username = success[0]['cas:user'][0];
     const email = username.includes('@') ? username : `${username}@iiit.ac.in`;
 
-    let firstName = '';
-    let lastName = '';
-
+    let firstName = '', lastName = '';
     if (username.includes('@')) {
       const [namePart] = username.split('@');
       const parts = namePart.split('.');
@@ -238,24 +239,26 @@ export const casLogin = async (req, res) => {
       lastName = '';
     }
 
-    // Check if user already exists
     let user = await User.findOne({ email });
     if (!user) {
-      // If not, create a new one with dummy details (you can customize this)
       user = await User.create({
         firstName,
         lastName,
         email,
         age: 0,
         contactNumber: '',
-        passwordHash: await bcrypt.hash('casuser', 10)
+        passwordHash: await bcrypt.hash('casuser', 10),
       });
     }
 
-    // Generate real JWT token
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
 
-    res.cookie("token", token, COOKIE_OPTIONS);
+    res.cookie("token", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
 
     return res.status(200).json({
       success: true,
