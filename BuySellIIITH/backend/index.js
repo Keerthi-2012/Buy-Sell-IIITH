@@ -6,11 +6,17 @@ import dotenv from "dotenv";
 import path from "path";
 import { fileURLToPath } from "url";
 
+
 import connectDB from "./utils/db.js";
 import userRoutes from "./routes/user.route.js";
 import itemRoutes from "./routes/item.route.js";
 import orderRoutes from "./routes/order.route.js";
 import MongoStore from "connect-mongo";
+
+// Debug: print route imports
+console.log("userRoutes type:", typeof userRoutes, "value:", userRoutes);
+console.log("itemRoutes type:", typeof itemRoutes, "value:", itemRoutes);
+console.log("orderRoutes type:", typeof orderRoutes, "value:", orderRoutes);
 
 
 // Load environment variables

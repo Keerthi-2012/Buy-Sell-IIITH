@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { NavLink, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import Navbar from './shared/Navbar';
-import './SellItem.css'
+import './SellItem.css';
 
 const SellItem = () => {
   const [name, setName] = useState('');
@@ -18,7 +18,7 @@ const SellItem = () => {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const res = await fetch('${API_BASE}/item/categories');
+        const res = await fetch(`${API_BASE}/item/categories`);
         const data = await res.json();
         setCategoryOptions(data);
       } catch (err) {
@@ -27,7 +27,7 @@ const SellItem = () => {
     };
 
     fetchCategories();
-  }, []);
+  }, [API_BASE]);
 
   const normalizeCategory = (cat) =>
     cat.trim().toLowerCase().replace(/\s+/g, '_');
@@ -59,18 +59,15 @@ const SellItem = () => {
     console.log('Submitting item:', itemData);
 
     try {
-      const token = localStorage.getItem('token');
-      const res = await fetch('${API_BASE}/item/create', {
+      const res = await fetch(`${API_BASE}/item/create`, {
         method: 'POST',
         credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`, // ✅ Send token for backend to authenticate
+          'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify(itemData),
       });
-
-
 
       const data = await res.json();
       console.log('Server response:', data);
@@ -88,7 +85,6 @@ const SellItem = () => {
       setIsAddingNewCategory(false);
       setNewCategory('');
       setDescription('');
-
     } catch (err) {
       console.error('Error submitting item:', err);
       alert(`Error: ${err.message}`);
@@ -102,7 +98,6 @@ const SellItem = () => {
         <div className="sell-item-container">
           <h1 className="sell-item-title">Sell an Item</h1>
           <form onSubmit={handleSubmit} className="form-group">
-
             <div>
               <label className="label">Item Name</label>
               <input
@@ -138,6 +133,7 @@ const SellItem = () => {
                 <option value="refurbished">Refurbished</option>
               </select>
             </div>
+
             <div>
               <label className="label">Description</label>
               <textarea
@@ -149,6 +145,7 @@ const SellItem = () => {
                 required
               />
             </div>
+
             <div>
               <label className="label">Category</label>
               <select
