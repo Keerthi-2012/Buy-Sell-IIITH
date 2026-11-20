@@ -1,0 +1,193 @@
+/* Register.css */
+
+.register-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 0.1px;
+  background-color: #f8f9fa;
+  min-height: 100vh;
+}
+
+form {
+  background-color: #ffffff;
+  padding: 50px;
+  /* margin-top: 20px; */
+  width: 100%;
+  max-width: 500px;
+  border-radius: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e5e7eb;
+}
+
+.register-title {
+  text-align: left;
+  font-size: 24px;
+  font-weight:bold;
+  margin-bottom: 20px;
+  color: #1f2937;
+  margin-top: 0;
+}
+
+.form-group {
+  margin-bottom: 10px;
+}
+
+label {
+  display: block;
+  margin-bottom: 4px;
+  font-weight: 500;
+  font-size: 14px;
+  color: #374151;
+}
+
+input {
+  width: 100%;
+  height: 35px;
+  padding: 10px;
+  font-size: 16px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  background-color: #f3f4f6;
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+  font-family: inherit;
+}
+
+input:focus {
+  outline: none;
+  border-color: #6366f1;
+  background-color: #ffffff;
+  box-shadow: 0 0 0 1px #6366f1;
+}
+
+input:hover {
+  background-color: #ffffff;
+}
+
+input[type="password"] {
+  font-family: inherit;
+  letter-spacing: 4px;
+  font-size: 20px;
+}
+
+/* Primary login button */
+button[type="submit"] {
+  width: 100%;
+  padding: 16px;
+  font-size: 16px;
+  font-weight: 600;
+  color: #ffffff;
+  background-color: #374151;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  margin-top: 16px;
+  margin-bottom: 16px;
+  transition: all 0.2s ease;
+}
+
+button[type="submit"]:hover {
+  background-color: #1f2937;
+}
+
+/* Secondary CAS login button */
+.cas-login-btn {
+  width: 100%;
+  padding: 16px;
+  font-size: 16px;
+  font-weight: 600;
+  color: #374151;
+  background-color: #ffffff;
+  border: 2px solid #d1d5db;
+  border-radius: 8px;
+  cursor: pointer;
+  margin-top: 8px;
+  margin-bottom: 24px;
+  transition: all 0.2s ease;
+}
+
+.cas-login-btn:hover {
+  background-color: #f9fafb;
+  border-color: #9ca3af;
+}
+
+/* "or" divider */
+.divider {
+  text-align: center;
+  margin: 20px 0;
+  color: #6b7280;
+  font-size: 14px;
+  position: relative;
+}
+
+.divider::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background-color: #e5e7eb;
+  z-index: 1;
+}
+
+.divider span {
+  background-color: #ffffff;
+  padding: 0 16px;
+  position: relative;
+  z-index: 2;
+}
+
+/* Register/Login link */
+.auth-link {
+  text-align: center;
+  margin-top: 24px;
+  font-size: 14px;
+  color: #6b7280;
+}
+
+.auth-link a {
+  color: #3b82f6;
+  text-decoration: none;
+  font-weight: 500;
+  margin-left: 4px;
+}
+
+.auth-link a:hover {
+  text-decoration: underline;
+}
+
+/* Responsive adjustments */
+@media (max-width: 480px) {
+  .register-container {
+    padding: 16px;
+  }
+  
+  form {
+    padding: 32px 24px;
+    max-width: 100%;
+  }
+  
+  .register-title {
+    font-size: 20px;
+    margin-bottom: 24px;
+  }
+  
+  input {
+    padding: 14px 16px;
+  }
+  
+  button[type="submit"],
+  .cas-login-btn {
+    padding: 14px;
+  }
+}
+
+/* Focus states for accessibility */
+input:focus-visible,
+button:focus-visible,
+.cas-login-btn:focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}

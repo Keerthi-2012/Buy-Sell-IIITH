@@ -1,0 +1,40 @@
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.main-container {
+  text-align: center;
+  max-width: 80rem; /* max-w-7xl */
+  margin: 2.5rem auto; /* my-10 */
+  padding: 2.5rem 1rem; /* px-4 py-10 */
+}
+
+.main-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem; /* gap-5 */
+  margin: 2.5rem 0; /* my-10 */
+}
+
+.main-tagline {
+  margin-left: auto;
+  margin-right: auto;
+  padding: 0.5rem 1rem; /* px-4 py-2 */
+  border-radius: 9999px; /* rounded-full */
+  background-color: #f3e8ff; /* bg-purple-100 */
+  color: #6A38C2; /* text-purple-1200 (custom color, assumed similar to highlight) */
+  font-weight: 500; /* font-medium */
+}
+
+.main-heading {
+  font-size: 3rem; /* text-5xl */
+  font-weight: 700; /* font-bold */
+}
+
+.main-highlight {
+  color: #6A38C2;
+}
+
+.main-description {
+  color: #4b5563; /* text-gray-600 */
+}

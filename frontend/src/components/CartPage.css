@@ -1,0 +1,36 @@
+.cart-container {
+  max-width: 80rem; /* roughly matches max-w-7xl */
+  margin: 1.25rem auto; /* mt-5 and my-5 */
+  padding: 0 1rem;
+}
+
+.cart-header {
+  font-weight: bold;
+  font-size: 1.25rem;
+}
+
+.cart-layout {
+  display: flex;
+  gap: 1.25rem;
+  margin-top: 1.25rem;
+}
+
+.cart-items {
+  flex: 1;
+  height: 88vh;
+  overflow-y: auto;
+  padding-bottom: 1.25rem;
+}
+
+.cart-items-empty {
+  text-align: center;
+  color: #6b7280; /* text-gray-500 */
+}
+
+.cart-sidebar {
+  width: 25%;
+}
+
+.cart-items-list > *:not(:last-child) {
+  margin-bottom: 1rem; /* similar to space-y-4 */
+}
