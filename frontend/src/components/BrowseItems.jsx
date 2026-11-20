@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Search } from 'lucide-react';
 import { FilterCard } from './FilterCard';
@@ -9,6 +9,7 @@ import './BrowseItems.css';
 const BrowseItems = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  // The search text lives in the URL so results can be shared and survive a refresh.
   const searchQuery = new URLSearchParams(location.search).get('search') || '';
 
   const [query, setQuery] = useState(searchQuery);
@@ -23,15 +24,18 @@ const BrowseItems = () => {
     setPage(1);
   }, [searchQuery]);
 
+  // Pushes the search box value into the URL.
   const searchProductHandler = () => {
     navigate(query.trim() ? `/browseitems?search=${encodeURIComponent(query.trim())}` : '/browseitems');
   };
 
+  // Filters from FilterCard land here; any change goes back to page 1.
   const updateFilter = (type, value) => {
     if (type === 'category') setCategory(value);
     setPage(1);
   };
 
+  // Refetch whenever the search, category or page changes.
   useEffect(() => {
     let cancelled = false;
     setLoading(true);

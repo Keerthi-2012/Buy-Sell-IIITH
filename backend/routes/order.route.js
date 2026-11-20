@@ -7,6 +7,7 @@ import {
   getCancelledOrders,
   completeOrder,
   cancelOrder,
+  createReview,
 } from "../controllers/order.controller.js";
 import isAuthenticated from "../middleware/isAuthenticated.js";
 import { validate } from "../middleware/validate.js";
@@ -17,6 +18,7 @@ import {
   checkoutBody,
   transactionParam,
   completeOrderBody,
+  reviewBody,
 } from "../validators/schemas.js";
 
 const router = express.Router();
@@ -36,6 +38,11 @@ router.patch(
   otpLimiter,
   validate({ params: transactionParam, body: completeOrderBody }),
   h(completeOrder)
+);
+router.post(
+  "/:transactionId/review",
+  validate({ params: transactionParam, body: reviewBody }),
+  h(createReview)
 );
 router.patch("/:transactionId/cancel", validate({ params: transactionParam }), h(cancelOrder));
 

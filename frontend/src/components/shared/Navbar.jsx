@@ -1,4 +1,3 @@
-import React from 'react'
 import './Navbar.css'
 import {
     Popover,
@@ -15,6 +14,7 @@ import { logoutUser } from '@/redux/authActions'
 const Navbar = () => {
     const dispatch = useDispatch();
     const { user } = useSelector((state) => state.auth);
+    // "Keerthi Seela" -> "KS" for the avatar circle.
     const getInitials = (firstName, lastName) => {
         if (!firstName && !lastName) return "US";
         const first = firstName?.[0] ?? "";
@@ -22,9 +22,9 @@ const Navbar = () => {
         return `${first}${second}`.toUpperCase();
     };
     const CLIENT_BASE = import.meta.env.VITE_CLIENT_BASE_URL;
+    // Ends our session first, then the CAS session if we know where to return to.
     const handleLogout = async () => {
         await dispatch(logoutUser());
-        // Also end the IIIT CAS single-sign-on session when we know where to send the user back.
         if (CLIENT_BASE) {
             window.location.href = `https://login.iiit.ac.in/cas/logout?service=${encodeURIComponent(CLIENT_BASE)}`;
         } else {
@@ -45,6 +45,8 @@ const Navbar = () => {
                     <li><RouterLink to="/cart">Cart</RouterLink></li>
                     <li><RouterLink to="/Orders">Orders</RouterLink></li>
                     <li><RouterLink to="/DeliveryPage">Delivery</RouterLink></li>
+                    <li><RouterLink to="/MyListings">My Listings</RouterLink></li>
+                    {user?.isAdmin && <li><RouterLink to="/Admin">Admin</RouterLink></li>}
                 </ul>
                 {
                     !user ? (

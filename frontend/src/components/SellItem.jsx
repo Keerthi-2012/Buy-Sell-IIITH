@@ -1,12 +1,14 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { api, errorMessage } from '../utils/api';
+import { api } from '../utils/api';
+import { reportError } from '../utils/reportError';
 import './SellItem.css';
 
 const SellItem = () => {
   const [name, setName] = useState('');
   const [price, setPrice] = useState('');
+  const [quantity, setQuantity] = useState(1);
   const [condition, setCondition] = useState('new');
   const [category, setCategory] = useState('');
   const [categoryOptions, setCategoryOptions] = useState([]);
@@ -15,6 +17,7 @@ const SellItem = () => {
   const [description, setDescription] = useState('');
   const navigate = useNavigate();
 
+  // Load existing categories for the dropdown.
   useEffect(() => {
     api
       .get('/item/categories')
@@ -22,9 +25,11 @@ const SellItem = () => {
       .catch((err) => console.error('Failed to fetch categories:', err));
   }, []);
 
+  // "Hostel Essentials" -> "hostel_essentials", matching how the server stores it.
   const normalizeCategory = (cat) =>
     cat.trim().toLowerCase().replace(/\s+/g, '_');
 
+  // Validates the new-category case, then creates the listing.
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -39,6 +44,7 @@ const SellItem = () => {
       await api.post('/item', {
         name,
         price: parseFloat(price),
+        quantity: Number(quantity),
         condition,
         category: finalCategory,
         description,
@@ -46,7 +52,7 @@ const SellItem = () => {
       toast.success('Item listed successfully!');
       navigate('/browseitems');
     } catch (err) {
-      toast.error(errorMessage(err, 'Failed to create item'));
+      reportError(err, navigate, 'Failed to create item');
     }
   };
 
@@ -76,6 +82,20 @@ const SellItem = () => {
                 onChange={(e) => setPrice(e.target.value)}
                 required
                 min="0"
+              />
+            </div>
+
+            <div>
+              <label className="label">Quantity</label>
+              <input
+                type="number"
+                className="input"
+                value={quantity}
+                onChange={(e) => setQuantity(e.target.value)}
+                required
+                min="1"
+                max="1000"
+                step="1"
               />
             </div>
 

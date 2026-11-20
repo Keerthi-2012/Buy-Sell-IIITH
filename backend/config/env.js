@@ -1,3 +1,4 @@
+// Reads .env once and exposes a single validated `config` object to the rest of the app.
 import dotenv from "dotenv";
 
 dotenv.config();
@@ -5,6 +6,7 @@ dotenv.config();
 const env = process.env;
 const isProd = env.NODE_ENV === "production";
 
+// Turns "a, b ,c" into ["a", "b", "c"], or returns the fallback when the var is unset.
 const list = (value, fallback = []) =>
   value
     ? value
@@ -15,6 +17,7 @@ const list = (value, fallback = []) =>
 
 const stripSlash = (url) => url.replace(/\/+$/, "");
 
+// Fail fast at startup instead of crashing on the first request.
 const missing = ["MONGO_URI", "JWT_SECRET"].filter((k) => !env[k]);
 if (missing.length) {
   throw new Error(
@@ -39,6 +42,7 @@ export const config = {
   otpEncryptionSecret: env.OTP_ENCRYPTION_KEY || env.JWT_SECRET,
   trustProxy: env.TRUST_PROXY === "true",
   clientOrigins,
+  // Options for the login cookie (also reused when clearing it on logout).
   cookie: {
     httpOnly: true,
     secure: isProd,
@@ -59,8 +63,13 @@ export const config = {
     "students.iiit.ac.in",
     "research.iiit.ac.in",
   ]).map((d) => d.toLowerCase()),
+  // Wrong-OTP policy: this many misses locks the order for lockMs.
   otp: {
     maxAttempts: 5,
     lockMs: 15 * 60 * 1000,
   },
+  // Emails with admin rights. Only counts for CAS-verified accounts (see utils/roles.js).
+  adminEmails: list(env.ADMIN_EMAILS).map((e) => e.toLowerCase()),
+  // A pending order that isn't completed within this many days is cancelled automatically.
+  reservationDays: Number(env.RESERVATION_DAYS) || 7,
 };

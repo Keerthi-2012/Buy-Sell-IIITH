@@ -8,11 +8,13 @@ import { registerBody, loginBody, updateProfileBody } from "../validators/schema
 
 const router = express.Router();
 
+// Public routes; the sign-in ones are rate limited against guessing.
 router.post("/register", authLimiter, validate({ body: registerBody }), h(register));
 router.post("/login", authLimiter, validate({ body: loginBody }), h(login));
 router.get("/cas-login", authLimiter, h(casLogin));
 router.get("/logout", logout);
 
+// Need a logged-in user.
 router.get("/profile", isAuthenticated, getProfile);
 router.put("/update", isAuthenticated, validate({ body: updateProfileBody }), h(updateProfile));
 

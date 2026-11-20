@@ -24,6 +24,7 @@ const CasCallback = () => {
       return;
     }
 
+    // The server checks the ticket with CAS and sets our login cookie.
     api
       .get('/user/cas-login', { params: { ticket, service } })
       .then(({ data }) => {

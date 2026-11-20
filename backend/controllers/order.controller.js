@@ -1,32 +1,45 @@
+// Thin HTTP layer for orders; the real logic lives in services/order.service.js.
 import { Cart } from "../models/cart.model.js";
 import { AppError } from "../utils/AppError.js";
+import { assertProfileComplete } from "../utils/roles.js";
 import * as orders from "../services/order.service.js";
+import * as reviews from "../services/review.service.js";
 
-// POST /order  { item }  -- "Buy now" for a single item.
-// Buyer, seller and price all come from the server, never from the request.
+// POST /order { item, quantity? }: buy now; buyer, seller and price come from the server.
 export const createOrder = async (req, res) => {
-  const [result] = await orders.placeOrders(req.user._id, [req.valid.body.item]);
+  assertProfileComplete(req.user);
+  const { item, quantity } = req.valid.body;
+  const [result] = await orders.placeOrders(req.user._id, [{ itemId: item, quantity }]);
   res.status(201).json(result);
 };
 
-// POST /order/checkout  { items?: [id] }  -- items default to the whole cart.
+// POST /order/checkout { items?: [id] }: buys the cart (or just the chosen cart items) at the quantities in the cart.
 export const checkout = async (req, res) => {
-  let itemIds = req.valid.body.items;
+  assertProfileComplete(req.user);
 
-  if (!itemIds) {
-    const cart = await Cart.findOne({ user: req.user._id });
-    itemIds = cart?.items.map((ci) => ci.item.toString()) ?? [];
+  const cart = await Cart.findOne({ user: req.user._id });
+  let lines = cart?.items.map((ci) => ({ itemId: ci.item.toString(), quantity: ci.quantity })) ?? [];
+
+  // Optionally narrow it to some of the cart's items ("Buy now" on one row).
+  const chosen = req.valid.body.items;
+  if (chosen) {
+    if (chosen.some((id) => !lines.some((l) => l.itemId === id))) {
+      throw new AppError(400, "Some items are not in your cart");
+    }
+    lines = lines.filter((l) => chosen.includes(l.itemId));
   }
-  if (!itemIds.length) throw new AppError(400, "Cart is empty");
+  if (!lines.length) throw new AppError(400, "Cart is empty");
 
-  const results = await orders.placeOrders(req.user._id, itemIds);
+  const results = await orders.placeOrders(req.user._id, lines);
   res.status(201).json({ message: "Orders placed successfully", orders: results });
 };
 
+// Orders where I'm the buyer.
 export const getPlacedOrders = async (req, res) => {
   res.json(await orders.listPlacedOrders(req.user._id));
 };
 
+// Orders where I'm the seller and the handover hasn't happened yet.
 export const getSoldOrders = async (req, res) => {
   res.json(await orders.listPendingSales(req.user._id));
 };
@@ -40,6 +53,12 @@ export const completeOrder = async (req, res) => {
   res.json(
     await orders.completeOrder(req.valid.params.transactionId, req.user._id, req.valid.body.otp)
   );
+};
+
+// POST /order/:transactionId/review  { rating, comment? }  -- buyer rates the seller.
+export const createReview = async (req, res) => {
+  const review = await reviews.createReview(req.user._id, req.valid.params.transactionId, req.valid.body);
+  res.status(201).json(review);
 };
 
 export const cancelOrder = async (req, res) => {

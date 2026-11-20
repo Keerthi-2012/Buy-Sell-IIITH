@@ -1,7 +1,6 @@
 import { createSlice } from '@reduxjs/toolkit';
 
-// Only non-secret profile data is cached locally. The session itself lives in an
-// httpOnly cookie that JavaScript cannot read.
+// Only the non-secret profile is cached here; the real session is an httpOnly cookie.
 const readStoredUser = () => {
   try {
     return JSON.parse(localStorage.getItem('user'));
@@ -10,37 +9,31 @@ const readStoredUser = () => {
   }
 };
 
-const storedUser = readStoredUser();
-
-export const authSlice = createSlice({
+// Holds who is logged in.
+const authSlice = createSlice({
   name: 'auth',
   initialState: {
-    user: storedUser,
-    isAuthenticated: !!storedUser,
+    user: readStoredUser(),
     // true until the first /user/profile check finishes, so guarded routes don't flash a redirect
     checkingSession: true,
-    loading: false,
   },
   reducers: {
-    setLoading(state, action) {
-      state.loading = action.payload;
-    },
+    // Save the user in state and in localStorage so a refresh keeps the UI logged in.
     setUser(state, action) {
       state.user = { ...state.user, ...action.payload };
-      state.isAuthenticated = true;
       localStorage.setItem('user', JSON.stringify(state.user));
     },
+    // Called once the first server check finishes.
     sessionChecked(state) {
       state.checkingSession = false;
     },
+    // Wipe everything we know about the user.
     logout(state) {
       state.user = null;
-      state.isAuthenticated = false;
       localStorage.removeItem('user');
-      localStorage.removeItem('token'); // legacy key from the old token-in-localStorage scheme
     },
   },
 });
 
-export const { setLoading, setUser, sessionChecked, logout } = authSlice.actions;
+export const { setUser, sessionChecked, logout } = authSlice.actions;
 export default authSlice.reducer;

@@ -1,7 +1,8 @@
 import { configureStore } from '@reduxjs/toolkit';
 import authReducer from './authslice';
 
-export const store = configureStore({
+// The Redux store; it only holds who is logged in.
+const store = configureStore({
   reducer: {
     auth: authReducer,
   },

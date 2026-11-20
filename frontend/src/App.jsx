@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 import { Provider, useDispatch } from 'react-redux';
 import { Toaster } from 'react-hot-toast';
 import { createBrowserRouter, RouterProvider, Outlet } from 'react-router-dom';
@@ -9,6 +9,7 @@ import { api } from './utils/api';
 
 import Navbar from './components/shared/Navbar';
 import ProtectedRoute from './components/shared/ProtectedRoute';
+import ProfilePrompt from './components/shared/ProfilePrompt';
 import Home from './components/Home';
 import Login from './components/auth/Login';
 import { Register } from './components/auth/Register';
@@ -21,11 +22,14 @@ import Profile from './components/Profile';
 import SellItem from './components/SellItem';
 import ItemUpdate from './components/ItemUpdate';
 import DeliveryPage from './components/Delivery';
+import MyListings from './components/MyListings';
+import Admin from './components/Admin';
 
 // Shared shell: navbar + toast host for every page.
 const Layout = () => (
   <>
     <Navbar />
+    <ProfilePrompt />
     <Toaster position="top-center" />
     <Outlet />
   </>
@@ -51,7 +55,12 @@ const appRouter = createBrowserRouter([
           { path: 'profile', element: <Profile /> },
           { path: 'update-item/:id', element: <ItemUpdate /> },
           { path: 'deliverypage', element: <DeliveryPage /> },
+          { path: 'mylistings', element: <MyListings /> },
         ],
+      },
+      {
+        element: <ProtectedRoute adminOnly />,
+        children: [{ path: 'admin', element: <Admin /> }],
       },
     ],
   },

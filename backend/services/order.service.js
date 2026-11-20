@@ -1,14 +1,20 @@
+// Order business logic: placing, listing, completing and cancelling orders.
 import crypto from "crypto";
 import { Order } from "../models/order.model.js";
 import { Item } from "../models/item.model.js";
+import { syncItemStatus, restoreStock } from "./item.service.js";
 import { Cart } from "../models/cart.model.js";
+import { Review } from "../models/review.model.js";
 import { AppError } from "../utils/AppError.js";
 import { config } from "../config/env.js";
 import { generateOtp, hashOtp, verifyOtp, encryptOtp, decryptOtp } from "../utils/otp.js";
 
+// Only these fields of the other person are exposed; never the full user document.
 const USER_FIELDS = "firstName lastName email contactNumber";
+const DAY_MS = 24 * 60 * 60 * 1000;
 const ITEM_FIELDS = "name price category status";
 
+// Fills in the item/buyer/seller details every order response needs.
 const populateOrder = (query) =>
   query
     .populate("item", ITEM_FIELDS)
@@ -16,11 +22,7 @@ const populateOrder = (query) =>
     .populate("seller", USER_FIELDS)
     .populate("cancelledBy", "firstName lastName");
 
-/**
- * Turns an order document into a client-safe object. Secrets are always
- * stripped; the plaintext OTP is attached only when `revealOtp` is set
- * (i.e. the buyer looking at their own pending order).
- */
+// Makes an order client-safe: secrets are stripped, and the OTP is added only for the buyer's own pending order.
 export const presentOrder = (order, { revealOtp = false } = {}) => {
   const obj = order.toObject();
   const otp = revealOtp && obj.status === "pending" ? decryptOtp(obj.otpEncrypted) : null;
@@ -30,21 +32,24 @@ export const presentOrder = (order, { revealOtp = false } = {}) => {
   delete obj.otpLockedUntil;
   delete obj.__v;
   if (otp) obj.otp = otp;
+  // Tell the client when an unfinished order will be released automatically.
+  if (obj.status === "pending") {
+    obj.expiresAt = new Date(obj.createdAt.getTime() + config.reservationDays * DAY_MS);
+  }
   return obj;
 };
 
-/**
- * Places one order per item. Items are claimed atomically
- * (available -> reserved), so two buyers can never get the same item.
- * Standalone MongoDB has no transactions, so a failure part-way through
- * undoes its own claims/orders instead.
- */
-export const placeOrders = async (buyerId, itemIds) => {
-  const ids = [...new Set(itemIds.map(String))];
-  if (!ids.length) throw new AppError(400, "No items to order");
+// Places one order per item (lines = [{ itemId, quantity }]); units are claimed atomically so nobody can oversell, and a failure undoes its own work.
+export const placeOrders = async (buyerId, lines) => {
+  // Merge repeated items, then make sure every requested item exists.
+  const wanted = new Map();
+  for (const { itemId, quantity } of lines) {
+    wanted.set(String(itemId), (wanted.get(String(itemId)) ?? 0) + quantity);
+  }
+  if (!wanted.size) throw new AppError(400, "No items to order");
 
-  const items = await Item.find({ _id: { $in: ids } });
-  if (items.length !== ids.length) {
+  const items = await Item.find({ _id: { $in: [...wanted.keys()] } });
+  if (items.length !== wanted.size) {
     throw new AppError(404, "One or more items no longer exist");
   }
   for (const item of items) {
@@ -53,22 +58,26 @@ export const placeOrders = async (buyerId, itemIds) => {
     }
   }
 
-  const claimed = [];
-  const created = [];
+  const claimed = []; // stock we've taken so far (for rollback)
+  const created = []; // orders we've created so far (for rollback)
   try {
+    // Step 1: take the units out of stock. The quantity check inside the update makes this race-safe.
     for (const item of items) {
+      const quantity = wanted.get(String(item._id));
       const got = await Item.findOneAndUpdate(
-        { _id: item._id, status: "available" },
-        { status: "reserved" }
+        { _id: item._id, quantity: { $gte: quantity } },
+        { $inc: { quantity: -quantity } }
       );
       if (!got) {
-        throw new AppError(409, `"${item.name}" is no longer available`, { itemId: item._id });
+        throw new AppError(409, `"${item.name}" doesn't have ${quantity} left`, { itemId: item._id });
       }
-      claimed.push(item._id);
+      claimed.push({ itemId: item._id, quantity });
     }
 
+    // Step 2: every order gets its own OTP, saved hashed and encrypted.
     const results = [];
     for (const item of items) {
+      const quantity = wanted.get(String(item._id));
       const otp = generateOtp();
       const order = await Order.create({
         transactionId: crypto.randomUUID(),
@@ -76,7 +85,8 @@ export const placeOrders = async (buyerId, itemIds) => {
         seller: item.seller,
         item: item._id,
         itemName: item.name,
-        amount: item.price,
+        quantity,
+        amount: item.price * quantity, // price comes from the item, never from the client
         hashedOTP: await hashOtp(otp),
         otpEncrypted: encryptOtp(otp),
       });
@@ -84,22 +94,34 @@ export const placeOrders = async (buyerId, itemIds) => {
       results.push({ order: presentOrder(order, { revealOtp: true }), otp });
     }
 
-    await Cart.updateOne({ user: buyerId }, { $pull: { items: { item: { $in: claimed } } } });
+    // Step 3: bought items no longer belong in the buyer's cart, and statuses follow the new stock.
+    await Cart.updateOne({ user: buyerId }, { $pull: { items: { item: { $in: claimed.map((c) => c.itemId) } } } });
+    await Promise.all(claimed.map((c) => syncItemStatus(c.itemId)));
     return results;
   } catch (err) {
+    // Undo everything so a half-finished checkout leaves no trace.
     await Order.deleteMany({ _id: { $in: created } });
-    await Item.updateMany({ _id: { $in: claimed }, status: "reserved" }, { status: "available" });
+    await Promise.all(claimed.map((c) => restoreStock(c.itemId, c.quantity)));
     throw err;
   }
 };
 
+// Everything the user has bought. Includes their own OTPs for pending orders.
 export const listPlacedOrders = async (userId) => {
   const orders = await populateOrder(
     Order.find({ buyer: userId }).select("+otpEncrypted").sort({ createdAt: -1 })
   );
-  return orders.map((o) => presentOrder(o, { revealOtp: true }));
+  // Flag the orders the buyer has already reviewed, so the UI can hide the rating form.
+  const reviewed = new Set(
+    (await Review.distinct("order", { order: { $in: orders.map((o) => o._id) } })).map(String)
+  );
+  return orders.map((o) => ({
+    ...presentOrder(o, { revealOtp: true }),
+    reviewed: reviewed.has(String(o._id)),
+  }));
 };
 
+// Items the user has sold that are still waiting for handover.
 export const listPendingSales = async (userId) => {
   const orders = await populateOrder(
     Order.find({ seller: userId, status: "pending" }).sort({ createdAt: -1 })
@@ -107,6 +129,7 @@ export const listPendingSales = async (userId) => {
   return orders.map((o) => presentOrder(o));
 };
 
+// Cancelled orders where the user was either the buyer or the seller.
 export const listCancelledOrders = async (userId) => {
   const orders = await populateOrder(
     Order.find({ status: "cancelled", $or: [{ buyer: userId }, { seller: userId }] }).sort({
@@ -116,7 +139,7 @@ export const listCancelledOrders = async (userId) => {
   return orders.map((o) => presentOrder(o));
 };
 
-/** Seller hands over the item and enters the OTP the buyer shows them. */
+// The seller hands over the item and enters the OTP the buyer shows them.
 export const completeOrder = async (transactionId, sellerId, otp) => {
   const order = await Order.findOne({ transactionId }).select("+hashedOTP +otpLockedUntil");
   if (!order) throw new AppError(404, "Order not found");
@@ -126,11 +149,13 @@ export const completeOrder = async (transactionId, sellerId, otp) => {
   if (order.status !== "pending") {
     throw new AppError(409, `Order is already ${order.status}`);
   }
+  // Refuse even correct guesses while the order is locked from too many misses.
   if (order.otpLockedUntil && order.otpLockedUntil > new Date()) {
     throw new AppError(429, "Too many wrong OTPs. Try again in a few minutes.");
   }
 
   if (!(await verifyOtp(otp, order.hashedOTP))) {
+    // Count the miss atomically, and lock the order once the limit is reached.
     const updated = await Order.findByIdAndUpdate(
       order._id,
       { $inc: { otpAttempts: 1 } },
@@ -152,12 +177,12 @@ export const completeOrder = async (transactionId, sellerId, otp) => {
     { new: true }
   );
   if (!done) throw new AppError(409, "Order is no longer pending");
-  await Item.updateOne({ _id: order.item }, { status: "sold" });
+  await syncItemStatus(order.item); // may flip to "sold" if that was the last unit
 
   return presentOrder(await populateOrder(Order.findById(done._id)));
 };
 
-/** Either party can cancel a pending order; the item goes back on sale. */
+// Either side can cancel a pending order; the item goes back on sale.
 export const cancelOrder = async (transactionId, userId) => {
   const order = await Order.findOne({ transactionId });
   if (!order) throw new AppError(404, "Order not found");
@@ -165,13 +190,14 @@ export const cancelOrder = async (transactionId, userId) => {
     throw new AppError(403, "Not authorized to cancel this order");
   }
 
+  // Only a still-pending order can be cancelled; the filter makes this race-safe too.
   const done = await Order.findOneAndUpdate(
     { _id: order._id, status: "pending" },
-    { status: "cancelled", cancelledBy: userId, cancelledAt: new Date() },
+    { status: "cancelled", cancelReason: "cancelled", cancelledBy: userId, cancelledAt: new Date() },
     { new: true }
   );
   if (!done) throw new AppError(400, "Only pending orders can be cancelled");
-  await Item.updateOne({ _id: order.item, status: "reserved" }, { status: "available" });
+  await restoreStock(order.item, order.quantity);
 
   return presentOrder(await populateOrder(Order.findById(done._id)));
 };

@@ -1,6 +1,6 @@
-import React from 'react';
 import './Footer.css';
 
+// Site footer shown at the bottom of the landing page.
 const Footer = () => {
   return (
     <footer className="footer">
@@ -13,5 +13,4 @@ const Footer = () => {
   );
 };
 
-export default Footer;
 export { Footer };

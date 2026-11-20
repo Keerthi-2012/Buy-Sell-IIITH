@@ -1,7 +1,4 @@
-import React, { useState } from 'react'
-import { Label } from '../ui/label'
-import { Input } from '../ui/input'
-import { Button } from '../ui/button'
+import { useState } from 'react';
 import { Link as RouterLink, useNavigate } from 'react-router-dom'
 import { toast } from 'react-hot-toast'
 import { useDispatch } from 'react-redux'
@@ -30,7 +27,7 @@ export const Register = () => {
         });
     };
 
-    // Enhanced client-side validation
+    // Quick checks so obvious mistakes never reach the server (it re-checks everything).
     const validateForm = () => {
         const { firstName, lastName, email, password, age, contactNumber } = input;
 
@@ -63,7 +60,7 @@ export const Register = () => {
             return false;
         }
 
-        // Enhanced email validation
+        // Basic email format check
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!emailRegex.test(email)) {
             toast.error('Please enter a valid email address');
@@ -79,10 +76,10 @@ export const Register = () => {
         return true;
     };
 
+    // Validates, registers, and logs the new user in.
     const submitHandler = async (e) => {
         e.preventDefault();
 
-        // Validate form before submission
         if (!validateForm()) {
             return;
         }
@@ -90,7 +87,7 @@ export const Register = () => {
         setLoading(true);
 
         try {
-            // Convert age to number and ensure all fields are properly formatted
+            // Tidy the values the way the server expects them
             const formData = {
                 firstName: input.firstName.trim(),
                 lastName: input.lastName.trim(),
@@ -163,5 +160,3 @@ export const Register = () => {
         </div>
     );
 };
-
-export default Register;

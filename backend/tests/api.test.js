@@ -1,3 +1,4 @@
+// End-to-end API tests against an in-memory MongoDB; env is set first because config reads it on import.
 process.env.NODE_ENV = "test";
 process.env.MONGO_URI = "mongodb://unused";
 process.env.JWT_SECRET = "test-secret-test-secret-test-secret-1234";
@@ -29,6 +30,7 @@ after(async () => {
 });
 
 let n = 0;
+// Registers a fresh user and returns a supertest agent that keeps their login cookie.
 const signup = async (overrides = {}) => {
   const agent = request.agent(app);
   const email = overrides.email ?? `user${++n}@students.iiit.ac.in`;
@@ -44,6 +46,7 @@ const signup = async (overrides = {}) => {
   return { agent, res, email, id: res.body.user?._id };
 };
 
+// Lists an item as the given user and returns it.
 const listItem = async (agent, overrides = {}) =>
   (
     await agent.post("/api/v1/item").send({
@@ -55,6 +58,7 @@ const listItem = async (agent, overrides = {}) =>
     })
   ).body;
 
+// Fails the test if a response contains anything that should stay server-side.
 const noSecrets = (body) => {
   const s = JSON.stringify(body);
   for (const k of ["passwordHash", "hashedOTP", "otpEncrypted"]) {
@@ -248,7 +252,8 @@ test("cancel (buyer or seller) puts the item back on sale", async () => {
   const item = await listItem(seller.agent);
   const a = await buyer.agent.post("/api/v1/order").send({ item: item._id });
   assert.equal((await Item.findById(item._id)).status, "reserved");
-  assert.equal((await seller.agent.put(`/api/v1/item/${item._id}`).send({ price: 1 })).status, 409);
+  // buyers are waiting, so the listing can't be deleted until the order is settled
+  assert.equal((await seller.agent.delete(`/api/v1/item/${item._id}`)).status, 409);
 
   const tx = a.body.order.transactionId;
   assert.equal((await stranger.agent.patch(`/api/v1/order/${tx}/cancel`)).status, 403);
@@ -270,8 +275,8 @@ test("cart + checkout: one order per item, cart cleared, all-or-nothing", async 
 
   assert.equal((await seller.agent.post("/api/v1/cart/add").send({ itemId: i1._id })).status, 400);
   await buyer.agent.post("/api/v1/cart/add").send({ itemId: i1._id });
-  const again = await buyer.agent.post("/api/v1/cart/add").send({ itemId: i1._id });
-  assert.equal(again.body.items.length, 1, "adding twice must not duplicate");
+  // only one unit exists, so a second add is refused and the cart keeps a single entry
+  assert.equal((await buyer.agent.post("/api/v1/cart/add").send({ itemId: i1._id })).status, 409);
   await buyer.agent.post("/api/v1/cart/add").send({ itemId: i2._id });
   assert.equal((await buyer.agent.get("/api/v1/cart")).body.items.length, 2);
 

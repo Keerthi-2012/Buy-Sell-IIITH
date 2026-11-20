@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useNavigate, useLocation, Link as RouterLink } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import { useDispatch } from 'react-redux';
 
 import { api, errorMessage } from '../../utils/api';
 import { setUser } from '../../redux/authslice';
-import './Login.css'; // Make sure path matches your project structure
+import './Login.css';
 
 const Login = () => {
   const navigate = useNavigate();
@@ -17,13 +17,16 @@ const Login = () => {
     email: '',
     password: ''
   });
+// Where the IIIT CAS server should send the user after signing in.
 const CAS_CALLBACK_URL = import.meta.env.VITE_CAS_CALLBACK;
 
+// Hands off to the IIIT CAS login page; we come back to /cas-callback with a ticket.
 const handleCasLogin = () => {
   const serviceUrl = encodeURIComponent(CAS_CALLBACK_URL);
   window.location.href = `https://login.iiit.ac.in/cas/login?service=${serviceUrl}`;
 };
 
+  // Generic input handler: updates whichever field changed.
   const changeEventHandler = (e) => {
     setInput({
       ...input,
@@ -31,6 +34,7 @@ const handleCasLogin = () => {
     });
   };
 
+  // Quick client-side checks, then logs in; on success go back to where they came from.
   const submitHandler = async (e) => {
     e.preventDefault();
 
@@ -76,7 +80,6 @@ const handleCasLogin = () => {
               name="email"
               type="email"
               value={input.email}
-              // placeholder="your-email@iiit.ac.in"
               onChange={changeEventHandler}
               disabled={loading}
               required
@@ -90,7 +93,6 @@ const handleCasLogin = () => {
               name="password"
               type="password"
               value={input.password}
-              // placeholder="Enter your password"
               onChange={changeEventHandler}
               disabled={loading}
               required

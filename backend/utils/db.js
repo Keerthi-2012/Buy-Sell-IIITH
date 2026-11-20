@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 import { config } from "../config/env.js";
 
+// Connects to MongoDB; there's no point running the API without it, so exit on failure.
 const connectDB = async () => {
   try {
     await mongoose.connect(config.mongoUri);

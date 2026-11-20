@@ -1,15 +1,17 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from 'react';
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { CartItem } from "./CartItem";
 import { CartSummary } from "./CartSummary";
 import { api, errorMessage } from "../utils/api";
+import { reportError } from "../utils/reportError";
 import "./CartPage.css";
 
 const CartPage = () => {
   const [cartItems, setCartItems] = useState([]);
   const navigate = useNavigate();
 
+  // Load the cart once when the page opens.
   useEffect(() => {
     api
       .get("/cart")
@@ -20,6 +22,17 @@ const CartPage = () => {
       });
   }, []);
 
+  // Changes how many of an item are in the cart; the server clamps it to the stock.
+  const handleQuantityChange = async (itemId, quantity) => {
+    try {
+      const res = await api.patch("/cart/item", { itemId, quantity });
+      setCartItems(res.data.items || []);
+    } catch (err) {
+      toast.error(errorMessage(err, "Could not change the quantity"));
+    }
+  };
+
+  // Removes one item and shows the cart the server sends back.
   const handleRemoveItem = async (itemId) => {
     try {
       const res = await api.post("/cart/remove", { itemId });
@@ -29,6 +42,7 @@ const CartPage = () => {
     }
   };
 
+  // Orders everything in the cart, then jumps to Orders where the OTPs are.
   const handleCheckout = async () => {
     try {
       await api.post("/order/checkout", {});
@@ -36,7 +50,7 @@ const CartPage = () => {
       setCartItems([]);
       navigate("/orders");
     } catch (err) {
-      toast.error(errorMessage(err, "Checkout failed"));
+      reportError(err, navigate, "Checkout failed");
     }
   };
 
@@ -49,7 +63,13 @@ const CartPage = () => {
             <div className="cart-items-empty">Your cart is empty.</div>
           ) : (
             cartItems.map((ci) => (
-              <CartItem key={ci.item._id} item={ci.item} onRemove={handleRemoveItem} />
+              <CartItem
+                key={ci.item._id}
+                item={ci.item}
+                quantity={ci.quantity}
+                onQuantityChange={handleQuantityChange}
+                onRemove={handleRemoveItem}
+              />
             ))
           )}
         </div>

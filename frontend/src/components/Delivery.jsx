@@ -1,13 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { api, errorMessage, fullName, rupees } from '../utils/api';
 import './Delivery.css';
 
+// One sale awaiting handover: the seller types the buyer's OTP here.
 const DeliveryCard = ({ order, onComplete, onCancel }) => {
   const [otpInput, setOtpInput] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
 
+  // Checks the OTP looks right locally, then lets the server verify it.
   const handleComplete = async () => {
     if (!/^\d{6}$/.test(otpInput.trim())) {
       setError('Enter the 6-digit OTP from the buyer.');
@@ -30,11 +32,20 @@ const DeliveryCard = ({ order, onComplete, onCancel }) => {
   return (
     <div className="delivery-card">
       <h2>{order.item?.name ?? order.itemName ?? 'Unnamed Item'}</h2>
-      <p>Price: {rupees(order.amount)}</p>
+      <p>
+        Price: {rupees(order.amount)}
+        {order.quantity > 1 && ` (${order.quantity} × ${rupees(order.amount / order.quantity)})`}
+      </p>
       <p>
         Buyer: {fullName(order.buyer)}
         {order.buyer?.contactNumber ? ` (${order.buyer.contactNumber})` : ''}
       </p>
+
+      {order.expiresAt && (
+        <p>
+          <small>Released automatically on {new Date(order.expiresAt).toLocaleDateString()} if not completed.</small>
+        </p>
+      )}
 
       <div className="otp-section">
         <input
@@ -57,6 +68,7 @@ const DeliveryCard = ({ order, onComplete, onCancel }) => {
   );
 };
 
+// Lists the seller's pending sales.
 const DeliveryPage = () => {
   const [deliveryOrders, setDeliveryOrders] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -69,6 +81,7 @@ const DeliveryPage = () => {
       .finally(() => setLoading(false));
   }, []);
 
+  // Drops a finished or cancelled order from the list without refetching.
   const removeOrder = (transactionId) =>
     setDeliveryOrders((prev) => prev.filter((o) => o.transactionId !== transactionId));
 

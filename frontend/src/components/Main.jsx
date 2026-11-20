@@ -1,6 +1,6 @@
-import React from 'react';
 import './Main.css';
 
+// Hero banner with the tagline on the landing page.
 const Main = () => {
     return (
         <div className='main-container'>

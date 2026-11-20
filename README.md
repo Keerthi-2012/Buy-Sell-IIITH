@@ -37,24 +37,27 @@ node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"
 ### Tests
 
 ```bash
-cd backend
-npm test
+cd backend && npm test     # API tests
+cd frontend && npm test    # component and logic tests
 ```
 
-The tests spin up a temporary in-memory MongoDB, so they don't touch your real data. The first run downloads a MongoDB binary, which takes a minute.
+The backend tests spin up a temporary in-memory MongoDB, so they don't touch your real data. The first run downloads a MongoDB binary, which takes a minute.
 
 ## How a sale works
 
-1. A seller lists an item. It's visible to everyone while it's available.
-2. A buyer places an order, either straight from the item page or by checking out their cart. The item is reserved immediately, so two people can't buy the same thing.
+1. A seller lists an item, with how many units they have. It's visible to everyone while any units are left.
+2. A buyer places an order, either straight from the item page or by checking out their cart, choosing how many units they want. Those units are taken out of stock immediately, so two people can never buy the same unit.
 3. The buyer sees a 6-digit OTP on their Orders page.
 4. When they meet, the buyer gives the seller the OTP, and the seller enters it on the Delivery page. The order completes and the item is marked sold.
-5. If plans fall through, either side can cancel a pending order and the item goes back on sale.
+5. If plans fall through, either side can cancel a pending order and its units go back on sale. If nobody finishes or cancels an order within a week, it's released automatically.
+6. After a completed order, the buyer can rate the seller. Ratings and recent reviews show up on that seller's item pages.
 
 A few details behind that:
 
-- Every listing is a single item, so there's no quantity. A cart holds each item at most once.
+- An item's status follows its stock: available while units are left, reserved when the rest are in pending orders, sold once the last order completes. Sellers can restock a listing from its edit page.
+- A cart holds an item with a quantity, capped at what's in stock. Each order covers one item at the chosen quantity, with its own OTP.
 - Buyer, seller and price are worked out by the server from the logged-in user and the item. The client only says which item.
+- Both buying and selling need an age and contact number on the profile, since you're meeting in person. First-time CAS users get a banner asking for them.
 - OTPs are never stored in plain text. Only the buyer can see theirs, and five wrong guesses lock that order for 15 minutes.
 
 ## Logging in
@@ -62,6 +65,12 @@ A few details behind that:
 Users can register with an email and password, or sign in through IIIT CAS. Registration is limited to IIIT email domains (change this with `ALLOWED_EMAIL_DOMAINS`).
 
 The session is a single httpOnly cookie, so nothing sensitive sits in `localStorage`. CAS accounts don't have a password. If someone signs in with CAS using an email that already has a password account, CAS takes over that account and the old password stops working, since only CAS can confirm who really owns the address.
+
+## Sellers and admins
+
+Sellers have a **My Listings** page showing everything they've posted, including reserved and sold items.
+
+Admins get an **Admin** page with every order and listing on the platform, and can remove listings (a pending order on a removed listing is cancelled for the buyer). Admin rights come from `ADMIN_EMAILS` and only apply to accounts that signed in through CAS, so nobody can claim an admin address just by registering with it.
 
 ## Configuration
 
@@ -75,6 +84,8 @@ The session is a single httpOnly cookie, so nothing sensitive sits in `localStor
 | `CLIENT_ORIGIN` | Frontend URL(s) allowed by CORS, comma-separated |
 | `OTP_ENCRYPTION_KEY` | Separate key for encrypting OTPs; falls back to `JWT_SECRET` |
 | `ALLOWED_EMAIL_DOMAINS` | Domains that can register |
+| `ADMIN_EMAILS` | Comma-separated admin emails (CAS sign-in only) |
+| `RESERVATION_DAYS` | Days before an unfinished order is released; defaults to 7 |
 | `CAS_URL`, `CAS_ALLOWED_SERVICES` | IIIT CAS server and the callback URLs it may redirect to |
 | `COOKIE_SAMESITE` | `lax` (default), `strict` or `none` |
 | `TRUST_PROXY` | Set to `true` if you run behind a reverse proxy |
@@ -105,17 +116,23 @@ All routes live under `/api/v1`. Routes marked "login" need the session cookie.
 | `PUT /user/update` | login | |
 | `GET /item` | public | Filters: `search`, `category`, `condition`, `minPrice`, `maxPrice`, `sort`, `page`, `limit` |
 | `GET /item/categories` | public | |
-| `GET /item/:id` | public | |
+| `GET /item/mine` | login | Your own listings in every status |
+| `GET /item/:id` | public | Includes the seller's rating summary |
 | `POST /item` | login | |
-| `PUT /item/:id` | login | Owner only, while the item is available |
-| `DELETE /item/:id` | login | Owner only, while the item is available |
+| `PUT /item/:id` | login | Owner only; setting `quantity` restocks the listing |
+| `DELETE /item/:id` | login | Owner only, and not while it has pending orders |
 | `GET /cart` | login | |
-| `POST /cart/add` | login | Body: `{ itemId }` |
+| `POST /cart/add` | login | Body: `{ itemId, quantity? }`; adding again raises the quantity, up to the stock |
+| `PATCH /cart/item` | login | Sets the exact quantity. Body: `{ itemId, quantity }` |
 | `POST /cart/remove` | login | Body: `{ itemId }` |
-| `POST /order` | login | Buy one item. Body: `{ item }` |
-| `POST /order/checkout` | login | Buys the whole cart, or `{ items: [...] }`. All or nothing |
+| `POST /order` | login | Buy one item. Body: `{ item, quantity? }` |
+| `POST /order/checkout` | login | Buys the whole cart at its quantities, or just `{ items: [...] }` from the cart. All or nothing |
 | `GET /order/placed` | login | Your purchases, with your OTPs for pending ones |
 | `GET /order/sold` | login | Your sales waiting for delivery |
 | `GET /order/cancelled` | login | |
 | `PATCH /order/:transactionId/complete` | login | Seller only. Body: `{ otp }` |
 | `PATCH /order/:transactionId/cancel` | login | Buyer or seller, pending orders only |
+| `POST /order/:transactionId/review` | login | Buyer only, after completion, once per order. Body: `{ rating, comment? }` |
+| `GET /review/seller/:id` | public | Rating summary and recent reviews |
+| `GET /admin/orders`, `GET /admin/items` | admin | Optional `status`, `page`, `limit` |
+| `DELETE /admin/items/:id` | admin | Removes a listing and cancels its pending order |

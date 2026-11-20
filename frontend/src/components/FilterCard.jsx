@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { api } from '../utils/api';
 import './FilterCard.css';
 
@@ -6,6 +6,7 @@ export const FilterCard = ({ onFilterChange }) => {
   const [categories, setCategories] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState('');
 
+  // Load the categories that currently have items for sale.
   useEffect(() => {
     api
       .get('/item/categories')
@@ -13,6 +14,7 @@ export const FilterCard = ({ onFilterChange }) => {
       .catch((err) => console.error('Failed to fetch categories', err));
   }, []);
 
+  // Remember the choice locally and tell the page to refetch.
   const handleCategoryChange = (e) => {
     const value = e.target.value;
     setSelectedCategory(value);

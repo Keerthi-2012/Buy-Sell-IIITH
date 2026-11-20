@@ -1,10 +1,12 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { api, errorMessage, rupees } from '../utils/api';
+import { api, rupees } from '../utils/api';
+import { reportError } from '../utils/reportError';
 import './CartItem.css';
 
-export const CartItem = ({ item, onRemove }) => {
+// One cart row: quantity +/- buttons, the line total, and buy/remove actions.
+export const CartItem = ({ item, quantity, onQuantityChange, onRemove }) => {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
@@ -12,6 +14,7 @@ export const CartItem = ({ item, onRemove }) => {
     return <div className="cart-item">Invalid item</div>;
   }
 
+  // Buys just this row at its current quantity, without checking out the rest of the cart.
   const handleBuyNow = async () => {
     setLoading(true);
     try {
@@ -19,7 +22,7 @@ export const CartItem = ({ item, onRemove }) => {
       toast.success('Order placed! Your delivery OTP is on the Orders page.');
       navigate('/orders');
     } catch (err) {
-      toast.error(errorMessage(err, 'Buy Now failed'));
+      reportError(err, navigate, 'Buy Now failed');
     } finally {
       setLoading(false);
     }
@@ -30,9 +33,21 @@ export const CartItem = ({ item, onRemove }) => {
       <div>
         <h2>{item.name}</h2>
         <p>{item.description}</p>
+        <p>
+          Quantity:{' '}
+          <button onClick={() => onQuantityChange(item._id, quantity - 1)} disabled={loading || quantity <= 1} aria-label="Decrease quantity">
+            −
+          </button>{' '}
+          {quantity}{' '}
+          <button onClick={() => onQuantityChange(item._id, quantity + 1)} disabled={loading || quantity >= item.quantity} aria-label="Increase quantity">
+            +
+          </button>
+          {item.quantity < 5 && <small> ({item.quantity} in stock)</small>}
+        </p>
       </div>
       <div className='text-right'>
-        <p className='price'>{rupees(item.price)}</p>
+        <p className='price'>{rupees(item.price * quantity)}</p>
+        {quantity > 1 && <small>{rupees(item.price)} each</small>}
         <button className='buy' onClick={handleBuyNow} disabled={loading}>
           {loading ? 'Processing...' : 'Buy Now'}
         </button>

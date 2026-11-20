@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import './Profile.css';
 import toast from 'react-hot-toast';
@@ -8,18 +8,21 @@ import { setUser } from '@/redux/authslice';
 const Profile = () => {
   const user = useSelector((state) => state.auth.user);
   const dispatch = useDispatch();
-  const [editMode, setEditMode] = useState(false);
+  // Incomplete profiles (e.g. a first CAS login) go straight into edit mode.
+  const [editMode, setEditMode] = useState(!user.profileComplete);
   const [formData, setFormData] = useState({
-    firstName: user?.firstName || '',
-    lastName: user?.lastName || '',
-    age: user?.age || '',
-    contactNumber: user?.contactNumber || ''
+    firstName: user.firstName || '',
+    lastName: user.lastName || '',
+    age: user.age || '',
+    contactNumber: user.contactNumber || ''
   });
 
+  // Keeps the edit form in sync with what the user types.
   const handleChange = (e) => {
     setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
+  // Saves the profile and refreshes the user shown across the app.
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
@@ -32,20 +35,13 @@ const Profile = () => {
     }
   };
 
-  if (!user) {
-    return (
-      <div>
-        <div className="profile-container">
-          <h1 className="profile-title">Please log in to see your profile.</h1>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div>
       <div className="profile-container">
         <h1 className="profile-title">Your Profile</h1>
+        {!user.profileComplete && (
+          <p>Add your age and contact number so buyers and sellers can reach you.</p>
+        )}
 
         <div className="profile-card">
           <div className="avatar-container">
@@ -68,7 +64,7 @@ const Profile = () => {
                 </label>
                 <label>
                   Age:
-                  <input name="age" value={formData.age} onChange={handleChange} />
+                  <input name="age" type="number" min="1" max="120" value={formData.age} onChange={handleChange} />
                 </label>
                 <label>
                   Contact Number:

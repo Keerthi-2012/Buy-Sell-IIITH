@@ -1,14 +1,17 @@
-import React from 'react';
 import { useSelector } from 'react-redux';
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 
-// Pages that need a logged-in user. Anonymous visitors are sent to /login.
-const ProtectedRoute = () => {
+// Gate for logged-in pages (adminOnly for admin ones); guests are sent to /login.
+const ProtectedRoute = ({ adminOnly = false }) => {
   const { user, checkingSession } = useSelector((state) => state.auth);
   const location = useLocation();
 
+  // Wait for the server check so a valid session isn't bounced to /login on refresh.
   if (checkingSession && user) return <p style={{ padding: '2rem' }}>Loading...</p>;
+  // Remember where they were headed so Login can send them back.
   if (!user) return <Navigate to="/login" replace state={{ from: location }} />;
+  // Logged in but not an admin: nothing to see here.
+  if (adminOnly && !user.isAdmin) return <Navigate to="/" replace />;
   return <Outlet />;
 };
 

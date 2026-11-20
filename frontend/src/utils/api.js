@@ -2,9 +2,7 @@ import axios from 'axios';
 import store from '../redux/store';
 import { logout } from '../redux/authslice';
 
-// Auth is an httpOnly cookie set by the server, so there is no token handling here.
-// In dev the Vite proxy forwards /api to the backend; in production the backend
-// serves this app, so a relative URL works there too.
+// Auth is an httpOnly cookie, so no token handling; dev proxies /api and prod serves this app.
 export const api = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL || '/api/v1',
   withCredentials: true,
@@ -24,11 +22,13 @@ api.interceptors.response.use(
   }
 );
 
-/** Best human-readable message from a failed request. */
+// Picks a readable message out of a failed request.
 export const errorMessage = (error, fallback = 'Something went wrong') =>
   error.response?.data?.message ||
   (error.request ? 'Network error. Please check your connection.' : fallback);
 
+// 1500 -> "₹1,500".
 export const rupees = (n) => `₹${Number(n ?? 0).toLocaleString('en-IN')}`;
 
+// "First Last" for a user object, skipping blank parts.
 export const fullName = (u) => [u?.firstName, u?.lastName].filter(Boolean).join(' ') || 'Unknown';
