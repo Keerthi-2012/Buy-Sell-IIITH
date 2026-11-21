@@ -122,3 +122,106 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* ==========================================================================
+   BuySell design system: tokens, base styles and shared pieces.
+   Component stylesheets build on these; colours live here and nowhere else.
+   ========================================================================== */
+:root {
+  --bs-brand: #6a38c2;
+  --bs-brand-dark: #5729a3;
+  --bs-brand-soft: #f3ecfd;
+  --bs-ring: rgba(106, 56, 194, 0.25);
+  --bs-ink: #111827;
+  --bs-ink-2: #374151;
+  --bs-muted: #6b7280;
+  --bs-line: #e5e7eb;
+  --bs-line-strong: #d1d5db;
+  --bs-bg: #f6f7fb;
+  --bs-surface: #ffffff;
+  --bs-danger: #dc2626;
+  --bs-danger-dark: #b91c1c;
+  --bs-success: #16a34a;
+  --bs-success-dark: #15803d;
+  --bs-radius: 14px;
+  --bs-radius-sm: 10px;
+  --bs-shadow: 0 1px 2px rgba(17, 24, 39, 0.05), 0 4px 12px rgba(17, 24, 39, 0.06);
+  --bs-shadow-lg: 0 10px 30px rgba(17, 24, 39, 0.12);
+  --bs-page: 1120px;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: 'Segoe UI', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif;
+  background: var(--bs-bg);
+  color: var(--bs-ink);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4 { margin: 0; line-height: 1.25; }
+p { margin: 0; }
+a { color: var(--bs-brand); }
+button { font-family: inherit; font-size: inherit; }
+button:disabled { cursor: not-allowed; opacity: 0.55; }
+:focus-visible { outline: 2px solid var(--bs-brand); outline-offset: 2px; }
+
+/* Text inputs, selects and textareas look the same everywhere.
+   :where() keeps the specificity at zero so any component can override these. */
+:where(input:not([type='radio']):not([type='checkbox']), select, textarea) {
+  width: 100%;
+  padding: 0.65rem 0.85rem;
+  font: inherit;
+  color: var(--bs-ink);
+  background: #fff;
+  border: 1px solid var(--bs-line-strong);
+  border-radius: var(--bs-radius-sm);
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+:where(input, select, textarea)::placeholder { color: #9ca3af; }
+:where(input:not([type='radio']):not([type='checkbox']), select, textarea):focus {
+  outline: none;
+  border-color: var(--bs-brand);
+  box-shadow: 0 0 0 3px var(--bs-ring);
+}
+:where(input, select, textarea):disabled { background: #f3f4f6; cursor: not-allowed; }
+:where(textarea) { resize: vertical; min-height: 6rem; }
+:where(input[type='radio'], input[type='checkbox']) { accent-color: var(--bs-brand); }
+
+/* Shared page shell and headings */
+.page-container {
+  max-width: var(--bs-page);
+  margin: 0 auto;
+  padding: 2rem 1.25rem 3rem;
+}
+.section-title {
+  margin-bottom: 1.25rem;
+  font-size: 1.75rem;
+  font-weight: 700;
+}
+
+/* Small status pills, used on orders and listings */
+.badge {
+  display: inline-block;
+  padding: 0.1rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: capitalize;
+  background: #f3f4f6;
+  color: var(--bs-ink-2);
+}
+.badge-pending, .badge-reserved { background: #fef3c7; color: #92400e; }
+.badge-completed, .badge-sold { background: #dcfce7; color: #166534; }
+.badge-cancelled { background: #fee2e2; color: #991b1b; }
+.badge-available { background: #dbeafe; color: #1e40af; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition: none !important; animation: none !important; }
+}

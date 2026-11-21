@@ -13,6 +13,9 @@ export const errorHandler = (err, req, res, _next) => {
   if (err?.type === "entity.parse.failed") {
     return res.status(400).json({ message: "Malformed JSON body" });
   }
+  if (err?.type === "entity.too.large") {
+    return res.status(413).json({ message: "Request body is too large" });
+  }
   if (err?.code === 11000) {
     return res.status(409).json({ message: "Duplicate value" }); // unique index hit
   }

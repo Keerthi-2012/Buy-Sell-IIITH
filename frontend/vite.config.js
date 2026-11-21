@@ -14,7 +14,7 @@ export default defineConfig({
   server: {
     // Same-origin API calls in dev: no CORS, cookies just work.
     proxy: {
-      "/api": "http://localhost:8000",
+      "/api": process.env.API_PROXY || "http://localhost:8000",
     },
   },
   // Component tests run in a fake browser (jsdom); CSS imports are skipped.

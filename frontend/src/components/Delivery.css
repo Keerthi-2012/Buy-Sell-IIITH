@@ -1,50 +1,30 @@
-.page-container {
-  padding: 2rem;
-  max-width: 900px;
-  margin: auto;
-}
-
-.section-title {
-  font-size: 2rem;
-  margin-bottom: 1.5rem;
-}
-
 .delivery-card {
-  border: 1px solid #ccc;
-  border-radius: 10px;
-  padding: 1.5rem;
-  margin-bottom: 1rem;
-  background-color: #f9f9f9;
-}
-
-.otp-section {
-  margin-top: 1rem;
   display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
+  flex-direction: column;
+  gap: 0.45rem;
+  margin-bottom: 1rem;
+  padding: 1.25rem 1.4rem;
+  background: var(--bs-surface);
+  border: 1px solid var(--bs-line);
+  border-radius: var(--bs-radius);
+  box-shadow: var(--bs-shadow);
 }
+.delivery-card h2 { font-size: 1.15rem; font-weight: 700; }
+.delivery-card p { color: var(--bs-ink-2); }
 
-.otp-section input {
-  padding: 0.5rem;
-  border: 1px solid #aaa;
-  border-radius: 5px;
-  flex-grow: 1;
-}
-
+/* OTP box with its buttons beside it (wraps on narrow screens) */
+.otp-section { display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem; margin-top: 0.6rem; }
+.otp-section input { flex: 1 1 180px; min-width: 0; font-weight: 600; letter-spacing: 0.2em; }
 .otp-section button {
-  padding: 0.5rem 1rem;
-  background-color: #28a745;
-  color: white;
-  border: none;
-  border-radius: 5px;
+  height: 2.6rem;
+  padding: 0 1.1rem;
+  border: 0;
+  border-radius: var(--bs-radius-sm);
+  background: var(--bs-success);
+  color: #fff;
+  font-weight: 600;
   cursor: pointer;
+  transition: background 0.15s;
 }
-
-.otp-section button:hover {
-  background-color: #218838;
-}
-
-.error {
-  color: red;
-  margin-top: 0.5rem;
-}
+.otp-section button:hover:not(:disabled) { background: var(--bs-success-dark); }
+.otp-section .error { flex-basis: 100%; font-size: 0.9rem; color: var(--bs-danger); }

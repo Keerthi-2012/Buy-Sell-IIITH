@@ -1,0 +1,12 @@
+/* The landing page fills the screen below the navbar, with the footer at the bottom */
+.home-page {
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100vh - 4rem);
+}
+.home-main {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}

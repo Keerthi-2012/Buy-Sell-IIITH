@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { SellerRating } from '../components/SellerRating';
 import { CartItem } from '../components/CartItem';
+import Admin from '../components/Admin';
 import { CartSummary } from '../components/CartSummary';
 import Orders from '../components/Orders';
 import { api } from '../utils/api';
@@ -81,6 +82,29 @@ describe('CartItem', () => {
   });
 });
 
+describe('Admin page', () => {
+  const orders = { orders: [{ _id: 'o1', itemName: 'Lamp', amount: 500, quantity: 2, status: 'pending', buyer: { firstName: 'Bea' }, seller: { firstName: 'Sam' }, createdAt: '2026-01-01T00:00:00Z' }], total: 1, pages: 1 };
+  const items = { items: [{ _id: 'i1', name: 'Desk', price: 100, quantity: 4, status: 'available', category: 'furniture', seller: { firstName: 'Sam' } }], total: 1, pages: 1 };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    api.get.mockImplementation((url) => Promise.resolve({ data: url === '/admin/orders' ? orders : items }));
+  });
+
+  it('switches between orders and listings without crashing', async () => {
+    render(<Admin />);
+    expect(await screen.findByText('Lamp')).toBeInTheDocument();
+    expect(screen.getByText(/2 units/)).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('button', { name: 'All Listings' }));
+    expect(await screen.findByText('Desk')).toBeInTheDocument();
+    expect(screen.getByText(/4 in stock/)).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('button', { name: 'All Orders' }));
+    expect(await screen.findByText('Lamp')).toBeInTheDocument();
+  });
+});
+
 describe('Orders page', () => {
   const base = { amount: 500, seller: { firstName: 'Sam', lastName: 'Seller' }, itemName: 'Lamp' };
 
@@ -107,19 +131,41 @@ describe('Orders page', () => {
     expect(screen.getByText(/released automatically on/i)).toBeInTheDocument();
   });
 
-  it('offers a review form on completed orders that have not been reviewed', async () => {
+  it('offers a rating form where the seller is not rated yet, and shows the rating where they are', async () => {
     mockOrders([
-      { ...base, _id: '1', transactionId: 't1', status: 'completed', reviewed: false },
-      { ...base, _id: '2', transactionId: 't2', status: 'completed', reviewed: true },
+      { ...base, _id: '1', transactionId: 't1', status: 'completed', myReview: null },
+      { ...base, _id: '2', transactionId: 't2', status: 'completed', myReview: { rating: 4, comment: '' } },
     ]);
     render(<Orders />);
     await userEvent.click(await screen.findByRole('button', { name: 'Orders Placed' }));
     expect(screen.getAllByRole('button', { name: /submit review/i })).toHaveLength(1);
-    expect(screen.getByText(/you've rated this seller/i)).toBeInTheDocument();
+    expect(screen.getByText(/you rated this seller/i)).toBeInTheDocument();
+    expect(screen.getByText(/one rating per seller/i)).toBeInTheDocument();
+  });
+
+  it('lets the buyer change an existing rating (pre-filled), instead of adding another', async () => {
+    mockOrders([
+      { ...base, _id: '1', transactionId: 't1', status: 'completed', myReview: { rating: 2, comment: 'slow' } },
+    ]);
+    api.post.mockResolvedValue({ data: {} });
+    render(<Orders />);
+    await userEvent.click(await screen.findByRole('button', { name: 'Orders Placed' }));
+
+    expect(screen.queryByRole('button', { name: /update review/i })).toBeNull(); // not editing yet
+    await userEvent.click(screen.getByRole('button', { name: 'Change rating' }));
+
+    expect(screen.getByRole('combobox')).toHaveValue('2');
+    expect(screen.getByPlaceholderText(/comment/i)).toHaveValue('slow');
+    await userEvent.selectOptions(screen.getByRole('combobox'), '5');
+    await userEvent.click(screen.getByRole('button', { name: /update review/i }));
+
+    await waitFor(() =>
+      expect(api.post).toHaveBeenCalledWith('/order/t1/review', { rating: 5, comment: 'slow' })
+    );
   });
 
   it('submits a review for the right order', async () => {
-    mockOrders([{ ...base, _id: '1', transactionId: 't1', status: 'completed', reviewed: false }]);
+    mockOrders([{ ...base, _id: '1', transactionId: 't1', status: 'completed', myReview: null }]);
     api.post.mockResolvedValue({ data: {} });
     render(<Orders />);
     await userEvent.click(await screen.findByRole('button', { name: 'Orders Placed' }));

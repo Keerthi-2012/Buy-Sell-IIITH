@@ -75,10 +75,10 @@ const Profile = () => {
               </form>
             ) : (
               <>
-                <p><span className="font-semibold">Name:</span> {user.firstName} {user.lastName}</p>
-                <p><span className="font-semibold">Email:</span> {user.email}</p>
-                <p><span className="font-semibold">Age:</span> {user.age}</p>
-                <p><span className="font-semibold">Contact Number:</span> {user.contactNumber}</p>
+                <p><span className="detail-label">Name:</span> {user.firstName} {user.lastName}</p>
+                <p><span className="detail-label">Email:</span> {user.email}</p>
+                <p><span className="detail-label">Age:</span> {user.age}</p>
+                <p><span className="detail-label">Contact Number:</span> {user.contactNumber}</p>
               </>
             )}
           </div>

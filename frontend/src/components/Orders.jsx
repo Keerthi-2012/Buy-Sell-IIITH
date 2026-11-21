@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import toast from 'react-hot-toast';
 import ReviewForm from './ReviewForm';
+import { Stars } from './SellerRating';
 import { api, errorMessage, fullName, rupees } from '../utils/api';
 import './Orders.css';
 
@@ -11,7 +12,36 @@ const cancelNote = (order) => {
   return `Cancelled by: ${order.cancelledBy ? fullName(order.cancelledBy) : 'Unknown'}`;
 };
 
-// One order in the list; the OTP, review form and cancel button show only where the tab asks.
+// The rating part of a completed order: the buyer's current rating (with a way to change it), or the form.
+const RatingSection = ({ order, onReviewed }) => {
+  const [editing, setEditing] = useState(false);
+  const mine = order.myReview;
+
+  if (!mine || editing) {
+    return (
+      <ReviewForm
+        transactionId={order.transactionId}
+        initial={mine}
+        onDone={() => {
+          setEditing(false);
+          onReviewed();
+        }}
+      />
+    );
+  }
+  return (
+    <p>
+      You rated this seller <Stars value={mine.rating} />{' '}
+      <button type="button" className="link-button" onClick={() => setEditing(true)}>
+        Change rating
+      </button>
+      <br />
+      <small>One rating per seller: it covers all your orders with them.</small>
+    </p>
+  );
+};
+
+// One order in the list; the OTP, rating and cancel button show only where the tab asks.
 const OrderCard = ({ order, showOtp = false, isCancelled = false, canReview = false, onCancel, onReviewed }) => (
   <div className="order-card">
     <h2>{order.item?.name ?? order.itemName ?? 'Unnamed Item'}</h2>
@@ -19,7 +49,9 @@ const OrderCard = ({ order, showOtp = false, isCancelled = false, canReview = fa
       Price: {rupees(order.amount)}
       {order.quantity > 1 && ` (${order.quantity} × ${rupees(order.amount / order.quantity)})`}
     </p>
-    <p>Status: {order.status}</p>
+    <p>
+      Status: <span className={`badge badge-${order.status}`}>{order.status}</span>
+    </p>
     {order.seller && <p>Seller: {fullName(order.seller)}</p>}
     {showOtp && (
       <p className="otp">
@@ -35,12 +67,7 @@ const OrderCard = ({ order, showOtp = false, isCancelled = false, canReview = fa
     )}
     {isCancelled && <p>{cancelNote(order)}</p>}
 
-    {canReview &&
-      (order.reviewed ? (
-        <p>You've rated this seller. Thanks!</p>
-      ) : (
-        <ReviewForm transactionId={order.transactionId} onDone={onReviewed} />
-      ))}
+    {canReview && <RatingSection order={order} onReviewed={onReviewed} />}
 
     {order.status === 'pending' && onCancel && (
       <button className="cancel-btn" onClick={() => onCancel(order.transactionId)}>

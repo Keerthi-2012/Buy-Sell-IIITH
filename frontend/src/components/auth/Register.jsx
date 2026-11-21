@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { Link as RouterLink, useNavigate } from 'react-router-dom'
 import { toast } from 'react-hot-toast'
 import { useDispatch } from 'react-redux'
-import './Register.css'
+import PasswordInput from '../shared/PasswordInput'
+import './Auth.css'
 import { api, errorMessage } from '../../utils/api'
 import { setUser } from '../../redux/authslice'
 
@@ -111,52 +112,53 @@ export const Register = () => {
     };
 
     return (
-        <div>
+        <div className="auth-page">
+            <form className="auth-card auth-card-wide" onSubmit={submitHandler}>
+                <h1 className="auth-title">Create your account</h1>
+                <p className="auth-subtitle">Use your IIIT email to start buying and selling on campus.</p>
 
-            <div className="register-container">
-                <form onSubmit={submitHandler}>
-                    <h1 className="register-title">Register</h1>
-
+                <div className="form-row">
                     <div className="form-group">
-                        <label>First Name</label>
-                        <input name="firstName" type="text" value={input.firstName} onChange={changeEventHandler} required />
-                    </div>
-
-                    <div className="form-group">
-                        <label>Last Name</label>
-                        <input name="lastName" type="text" value={input.lastName} onChange={changeEventHandler} required />
+                        <label htmlFor="firstName">First name</label>
+                        <input id="firstName" name="firstName" type="text" autoComplete="given-name" value={input.firstName} onChange={changeEventHandler} required />
                     </div>
 
                     <div className="form-group">
-                        <label>Email</label>
-                        <input name="email" type="email" value={input.email} onChange={changeEventHandler} required />
+                        <label htmlFor="lastName">Last name</label>
+                        <input id="lastName" name="lastName" type="text" autoComplete="family-name" value={input.lastName} onChange={changeEventHandler} required />
+                    </div>
+                </div>
+
+                <div className="form-group">
+                    <label htmlFor="email">Email</label>
+                    <input id="email" name="email" type="email" autoComplete="email" placeholder="you@students.iiit.ac.in" value={input.email} onChange={changeEventHandler} required />
+                </div>
+
+                <div className="form-row">
+                    <div className="form-group">
+                        <label htmlFor="age">Age</label>
+                        <input id="age" name="age" type="number" min="1" max="120" value={input.age} onChange={changeEventHandler} required />
                     </div>
 
                     <div className="form-group">
-                        <label>Age</label>
-                        <input name="age" type="number" value={input.age} onChange={changeEventHandler} required />
+                        <label htmlFor="contactNumber">Contact number</label>
+                        <input id="contactNumber" name="contactNumber" type="tel" autoComplete="tel" value={input.contactNumber} onChange={changeEventHandler} required />
                     </div>
+                </div>
 
-                    <div className="form-group">
-                        <label>Contact Number</label>
-                        <input name="contactNumber" type="tel" value={input.contactNumber} onChange={changeEventHandler} required />
-                    </div>
+                <div className="form-group">
+                    <label htmlFor="password">Password</label>
+                    <PasswordInput id="password" name="password" autoComplete="new-password" placeholder="At least 8 characters" value={input.password} onChange={changeEventHandler} required />
+                </div>
 
-                    <div className="form-group">
-                        <label>Password</label>
-                        <input name="password" type="password" value={input.password} onChange={changeEventHandler} required />
-                    </div>
+                <button type="submit" className="auth-submit" disabled={loading}>
+                    {loading ? 'Registering...' : 'Register'}
+                </button>
 
-                    <button type="submit" disabled={loading}>
-                        {loading ? 'Registering...' : 'Register'}
-                    </button>
-
-                    <div className="text-center text-sm mt-6">
-                        Already have an account? <RouterLink to="/login" className="text-blue-600 ml-1">Login</RouterLink>
-                    </div>
-                </form>
-            </div>
-
+                <p className="auth-switch">
+                    Already have an account? <RouterLink to="/login">Login</RouterLink>
+                </p>
+            </form>
         </div>
     );
 };

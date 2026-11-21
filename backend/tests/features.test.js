@@ -77,6 +77,7 @@ test("CAS users must complete their profile before selling or buying", async () 
 
   const profile = await cas.agent.get("/api/v1/user/profile");
   assert.equal(profile.body.user.profileComplete, false);
+  assert.equal(profile.body.user.authProvider, "cas");
 
   const sell = await cas.agent.post("/api/v1/item").send({ name: "Book", price: 100, category: "books" });
   assert.equal(sell.status, 403);
@@ -91,8 +92,28 @@ test("CAS users must complete their profile before selling or buying", async () 
   assert.equal((await cas.agent.post("/api/v1/item").send({ name: "Book", price: 100, category: "books" })).status, 201);
 });
 
+test("a CAS user with no surname can still complete their profile", async () => {
+  const cas = await casUser("rollno123@iiit.ac.in");
+  const update = await cas.agent
+    .put("/api/v1/user/update")
+    .send({ firstName: "Rollno123", lastName: "", age: 20, contactNumber: "9123456780" });
+  assert.equal(update.status, 200);
+  assert.equal(update.body.user.profileComplete, true);
+
+  // registration itself still asks for a last name
+  const reg = await request(app).post("/api/v1/user/register").send({
+    firstName: "No",
+    lastName: "",
+    email: "nolast@students.iiit.ac.in",
+    age: 20,
+    contactNumber: "9876543210",
+    password: "password123",
+  });
+  assert.equal(reg.status, 400);
+});
+
 // ---------------------------------------------------------------- reviews
-test("reviews: only the buyer, only after completion, only once", async () => {
+test("reviews: only the buyer, only after completion; rating again updates it", async () => {
   const seller = await signup();
   const buyer = await signup();
   const stranger = await signup();
@@ -113,11 +134,80 @@ test("reviews: only the buyer, only after completion, only once", async () => {
   assert.equal((await review(buyer.agent, { rating: 4, comment: "x".repeat(501) })).status, 400);
 
   assert.equal((await review(buyer.agent, { rating: 4, comment: "Smooth handover" })).status, 201);
-  assert.equal((await review(buyer.agent, { rating: 1 })).status, 409, "a second review must be refused");
 
-  // the buyer's order list now says it was reviewed
+  // the buyer's order list now carries their rating, so the UI can show it
+  let placed = await buyer.agent.get("/api/v1/order/placed");
+  assert.deepEqual(placed.body[0].myReview, { rating: 4, comment: "Smooth handover" });
+
+  // rating again changes it (200) instead of adding a second review
+  const again = await review(buyer.agent, { rating: 2, comment: "On reflection, slow" });
+  assert.equal(again.status, 200);
+  placed = await buyer.agent.get("/api/v1/order/placed");
+  assert.deepEqual(placed.body[0].myReview, { rating: 2, comment: "On reflection, slow" });
+  assert.deepEqual((await request(app).get(`/api/v1/review/seller/${seller.id}`)).body.summary, { average: 2, count: 1 });
+});
+
+test("one buyer with several orders from the same seller counts as ONE rating", async () => {
+  const seller = await signup();
+  const buyer = await signup();
+  const other = await signup();
+  const [a, b, c] = await Promise.all([
+    listItem(seller.agent, { name: "Notebook" }),
+    listItem(seller.agent, { name: "Pen set" }),
+    listItem(seller.agent, { name: "Backpack" }),
+  ]);
+  const txs = [];
+  for (const item of [a, b, c]) txs.push(await buyAndComplete(seller, buyer, item));
+
+  // the buyer rates the same seller on every one of their three orders
+  const ratings = [5, 3, 1];
+  for (const [i, tx] of txs.entries()) {
+    const res = await buyer.agent.post(`/api/v1/order/${tx}/review`).send({ rating: ratings[i], comment: `order ${i + 1}` });
+    assert.equal(res.status, i === 0 ? 201 : 200);
+  }
+
+  let summary = (await request(app).get(`/api/v1/review/seller/${seller.id}`)).body;
+  assert.deepEqual(summary.summary, { average: 1, count: 1 }, "one buyer is one rating, the latest one");
+  assert.equal(summary.reviews.length, 1);
+  assert.equal(summary.reviews[0].comment, "order 3");
+
+  // every one of that buyer's orders shows the same single rating
   const placed = await buyer.agent.get("/api/v1/order/placed");
-  assert.equal(placed.body[0].reviewed, true);
+  assert.ok(placed.body.every((o) => o.myReview?.rating === 1));
+
+  // a different buyer is a second rating, and the average is across buyers
+  const otherTx = await buyAndComplete(seller, other, await listItem(seller.agent, { name: "Mug" }));
+  await other.agent.post(`/api/v1/order/${otherTx}/review`).send({ rating: 5 });
+  summary = (await request(app).get(`/api/v1/review/seller/${seller.id}`)).body;
+  assert.deepEqual(summary.summary, { average: 3, count: 2 });
+  assert.equal(summary.reviews.length, 2);
+});
+
+test("duplicate reviews already in the database (from before this rule) count once, latest wins", async () => {
+  const seller = await signup();
+  const buyer = await signup();
+  const [a, b] = await Promise.all([listItem(seller.agent, { name: "A" }), listItem(seller.agent, { name: "B" })]);
+  const txA = await buyAndComplete(seller, buyer, a);
+  const txB = await buyAndComplete(seller, buyer, b);
+  const orderA = await Order.findOne({ transactionId: txA });
+  const orderB = await Order.findOne({ transactionId: txB });
+
+  // the old behaviour: one review per order, written straight into the collection
+  const { Review } = await import("../models/review.model.js");
+  const now = Date.now();
+  await Review.collection.insertMany([
+    { order: orderA._id, reviewer: orderA.buyer, seller: orderA.seller, rating: 2, comment: "", createdAt: new Date(now - 5000), updatedAt: new Date(now - 5000) },
+    { order: orderB._id, reviewer: orderB.buyer, seller: orderB.seller, rating: 1, comment: "", createdAt: new Date(now), updatedAt: new Date(now) },
+  ]);
+
+  const res = (await request(app).get(`/api/v1/review/seller/${seller.id}`)).body;
+  assert.deepEqual(res.summary, { average: 1, count: 1 });
+  assert.equal(res.reviews.length, 1);
+
+  // and a new rating updates the newest of them instead of making a third
+  const update = await buyer.agent.post(`/api/v1/order/${txA}/review`).send({ rating: 4 });
+  assert.equal(update.status, 200);
+  assert.deepEqual((await request(app).get(`/api/v1/review/seller/${seller.id}`)).body.summary, { average: 4, count: 1 });
 });
 
 test("seller rating shows on the item page and in the public reviews list", async () => {

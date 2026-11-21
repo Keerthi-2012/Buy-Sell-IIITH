@@ -6,8 +6,8 @@ const ProtectedRoute = ({ adminOnly = false }) => {
   const { user, checkingSession } = useSelector((state) => state.auth);
   const location = useLocation();
 
-  // Wait for the server check so a valid session isn't bounced to /login on refresh.
-  if (checkingSession && user) return <p style={{ padding: '2rem' }}>Loading...</p>;
+  // Wait for the server's answer, so a valid cookie isn't bounced to /login even when the local cache is empty.
+  if (checkingSession) return <p style={{ padding: '2rem' }}>Loading...</p>;
   // Remember where they were headed so Login can send them back.
   if (!user) return <Navigate to="/login" replace state={{ from: location }} />;
   // Logged in but not an admin: nothing to see here.

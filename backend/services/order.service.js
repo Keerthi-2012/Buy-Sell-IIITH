@@ -111,13 +111,16 @@ export const listPlacedOrders = async (userId) => {
   const orders = await populateOrder(
     Order.find({ buyer: userId }).select("+otpEncrypted").sort({ createdAt: -1 })
   );
-  // Flag the orders the buyer has already reviewed, so the UI can hide the rating form.
-  const reviewed = new Set(
-    (await Review.distinct("order", { order: { $in: orders.map((o) => o._id) } })).map(String)
-  );
+  // Attach the buyer's current rating of each seller, so the UI can show it and offer to change it.
+  const sellerIds = orders.map((o) => o.seller?._id).filter(Boolean);
+  const ratings = await Review.find({ reviewer: userId, seller: { $in: sellerIds } }).sort({ createdAt: -1 });
+  const mine = new Map();
+  for (const r of ratings) {
+    if (!mine.has(String(r.seller))) mine.set(String(r.seller), { rating: r.rating, comment: r.comment }); // newest first
+  }
   return orders.map((o) => ({
     ...presentOrder(o, { revealOtp: true }),
-    reviewed: reviewed.has(String(o._id)),
+    myReview: mine.get(String(o.seller?._id)) ?? null,
   }));
 };
 

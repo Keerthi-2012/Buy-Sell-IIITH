@@ -6,13 +6,15 @@ import {
 } from '../ui/popover'
 
 import { LogOut, User2 } from 'lucide-react'
-import { Link as RouterLink } from 'react-router-dom'
+import { Link as RouterLink, NavLink, useNavigate } from 'react-router-dom'
 import { useSelector } from 'react-redux'
 import { useDispatch } from 'react-redux';
 import { logoutUser } from '@/redux/authActions'
+import { goTo } from '@/utils/navigation'
 
 const Navbar = () => {
     const dispatch = useDispatch();
+    const navigate = useNavigate();
     const { user } = useSelector((state) => state.auth);
     // "Keerthi Seela" -> "KS" for the avatar circle.
     const getInitials = (firstName, lastName) => {
@@ -22,13 +24,15 @@ const Navbar = () => {
         return `${first}${second}`.toUpperCase();
     };
     const CLIENT_BASE = import.meta.env.VITE_CLIENT_BASE_URL;
-    // Ends our session first, then the CAS session if we know where to return to.
+    // Ends our session. Only people who signed in through CAS also sign out of IIIT's single
+    // sign-on (an external page); everyone else just goes to the login page.
     const handleLogout = async () => {
+        const usedCas = user?.authProvider === 'cas';
         await dispatch(logoutUser());
-        if (CLIENT_BASE) {
-            window.location.href = `https://login.iiit.ac.in/cas/logout?service=${encodeURIComponent(CLIENT_BASE)}`;
+        if (usedCas && CLIENT_BASE) {
+            goTo(`https://login.iiit.ac.in/cas/logout?service=${encodeURIComponent(CLIENT_BASE)}`);
         } else {
-            window.location.href = '/login';
+            navigate('/login');
         }
     };
 
@@ -37,16 +41,16 @@ const Navbar = () => {
             <div className="logo">
                 Buy<span>Sell</span>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '2rem' }}>
+            <div className="nav-right">
                 <ul className="nav-links">
-                    <li><RouterLink to="/">Home</RouterLink></li>
-                    <li><RouterLink to="/BrowseItems">Browse</RouterLink></li>
-                    <li><RouterLink to="/SellItem">Sell</RouterLink></li>
-                    <li><RouterLink to="/cart">Cart</RouterLink></li>
-                    <li><RouterLink to="/Orders">Orders</RouterLink></li>
-                    <li><RouterLink to="/DeliveryPage">Delivery</RouterLink></li>
-                    <li><RouterLink to="/MyListings">My Listings</RouterLink></li>
-                    {user?.isAdmin && <li><RouterLink to="/Admin">Admin</RouterLink></li>}
+                    <li><NavLink to="/" end>Home</NavLink></li>
+                    <li><NavLink to="/BrowseItems">Browse</NavLink></li>
+                    <li><NavLink to="/SellItem">Sell</NavLink></li>
+                    <li><NavLink to="/cart">Cart</NavLink></li>
+                    <li><NavLink to="/Orders">Orders</NavLink></li>
+                    <li><NavLink to="/DeliveryPage">Delivery</NavLink></li>
+                    <li><NavLink to="/MyListings">My Listings</NavLink></li>
+                    {user?.isAdmin && <li><NavLink to="/Admin">Admin</NavLink></li>}
                 </ul>
                 {
                     !user ? (

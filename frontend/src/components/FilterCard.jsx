@@ -14,34 +14,41 @@ export const FilterCard = ({ onFilterChange }) => {
       .catch((err) => console.error('Failed to fetch categories', err));
   }, []);
 
-  // Remember the choice locally and tell the page to refetch.
-  const handleCategoryChange = (e) => {
-    const value = e.target.value;
+  // Picks a category, or clears the filter ('') and tells the page to refetch.
+  const choose = (value) => {
     setSelectedCategory(value);
     onFilterChange('category', value);
   };
 
+  // Clicking the selected category again switches it off; clicking another one switches to it.
+  const toggleCategory = (cat) => choose(selectedCategory === cat ? '' : cat);
+
   return (
     <div className="filter-card">
-      <h1 className="filter-title">Filters</h1>
+      <div className="filter-header">
+        <h1 className="filter-title">Filters</h1>
+        {selectedCategory && (
+          <button type="button" className="filter-clear" onClick={() => choose('')}>
+            Clear
+          </button>
+        )}
+      </div>
       <hr className="filter-divider" />
 
       {categories.length > 0 && (
         <>
           <h1 className="filter-section-title">Category</h1>
-          {categories.map((cat, idx) => {
+          {categories.map((cat) => {
             const formatted = cat.replace(/_/g, ' ');
             return (
-              <div key={idx} className="radio-option">
+              <div key={cat} className="filter-option">
                 <input
-                  type="radio"
+                  type="checkbox"
                   id={`category-${cat}`}
-                  name="category"
-                  value={cat}
                   checked={selectedCategory === cat}
-                  onChange={handleCategoryChange}
+                  onChange={() => toggleCategory(cat)}
                 />
-                <label htmlFor={`category-${cat}`} className="radio-label">
+                <label htmlFor={`category-${cat}`} className="filter-label">
                   {formatted.charAt(0).toUpperCase() + formatted.slice(1)}
                 </label>
               </div>

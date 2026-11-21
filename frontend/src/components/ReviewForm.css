@@ -1,0 +1,27 @@
+/* Rating form shown under a completed order */
+.review-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+  margin-top: 0.6rem;
+  padding: 1rem;
+  background: #faf8ff;
+  border: 1px solid #e6dcf8;
+  border-radius: 12px;
+}
+.review-form label { display: flex; align-items: center; gap: 0.5rem; font-size: 0.9rem; font-weight: 600; }
+.review-form select { width: auto; }
+.review-form input { flex: 1 1 220px; min-width: 0; }
+.review-form button {
+  height: 2.5rem;
+  padding: 0 1.1rem;
+  border: 0;
+  border-radius: var(--bs-radius-sm);
+  background: var(--bs-brand);
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.review-form button:hover:not(:disabled) { background: var(--bs-brand-dark); }

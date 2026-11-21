@@ -5,7 +5,8 @@ import { useDispatch } from 'react-redux';
 
 import { api, errorMessage } from '../../utils/api';
 import { setUser } from '../../redux/authslice';
-import './Login.css';
+import PasswordInput from '../shared/PasswordInput';
+import './Auth.css';
 
 const Login = () => {
   const navigate = useNavigate();
@@ -68,60 +69,54 @@ const handleCasLogin = () => {
   };
 
   return (
-    <div>
-      <div className="container">
-        <form className="login-form" onSubmit={submitHandler}>
-          <h1>Login</h1>
+    <div className="auth-page">
+      <form className="auth-card" onSubmit={submitHandler}>
+        <h1 className="auth-title">Welcome back</h1>
+        <p className="auth-subtitle">Log in to buy, sell and track your orders.</p>
 
-          <div className="form-group">
-            <label htmlFor="email">Email</label>
-            <input
-              id="email"
-              name="email"
-              type="email"
-              value={input.email}
-              onChange={changeEventHandler}
-              disabled={loading}
-              required
-            />
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="password">Password</label>
-            <input
-              id="password"
-              name="password"
-              type="password"
-              value={input.password}
-              onChange={changeEventHandler}
-              disabled={loading}
-              required
-            />
-          </div>
-
-          <button type="submit" disabled={loading}>
-            {loading ? 'Logging in...' : 'Login'}
-          </button>
-
-          <div className="text-center text-sm text-gray-600 my-2">or</div>
-
-          <button
-            type="button"
-            className="variant-outline"
-            onClick={handleCasLogin}
+        <div className="form-group">
+          <label htmlFor="email">Email</label>
+          <input
+            id="email"
+            name="email"
+            type="email"
+            autoComplete="email"
+            placeholder="you@students.iiit.ac.in"
+            value={input.email}
+            onChange={changeEventHandler}
             disabled={loading}
-          >
-            Login via IIIT CAS
-          </button>
+            required
+          />
+        </div>
 
-          <div className="text-center text-sm mt-6">
-            Don't have an account?
-            <RouterLink to="/register" className="text-blue-600 ml-1">
-              Register
-            </RouterLink>
-          </div>
-        </form>
-      </div>
+        <div className="form-group">
+          <label htmlFor="password">Password</label>
+          <PasswordInput
+            id="password"
+            name="password"
+            autoComplete="current-password"
+            placeholder="Your password"
+            value={input.password}
+            onChange={changeEventHandler}
+            disabled={loading}
+            required
+          />
+        </div>
+
+        <button type="submit" className="auth-submit" disabled={loading}>
+          {loading ? 'Logging in...' : 'Login'}
+        </button>
+
+        <div className="auth-divider">or</div>
+
+        <button type="button" className="auth-cas" onClick={handleCasLogin} disabled={loading}>
+          Login via IIIT CAS
+        </button>
+
+        <p className="auth-switch">
+          Don't have an account? <RouterLink to="/register">Register</RouterLink>
+        </p>
+      </form>
     </div>
   );
 };

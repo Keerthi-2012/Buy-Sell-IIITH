@@ -49,6 +49,12 @@ describe('ProtectedRoute', () => {
     expect(screen.getByText('Loading...')).toBeInTheDocument();
   });
 
+  it('waits even with an empty cache, since the cookie may still be valid', () => {
+    renderAt('/admin', { user: null, checkingSession: true }, routes);
+    expect(screen.getByText('Loading...')).toBeInTheDocument();
+    expect(screen.queryByText('login page')).toBeNull();
+  });
+
   it('keeps regular users out of admin pages', () => {
     renderAt('/admin', { user: { _id: '1', isAdmin: false } }, routes);
     expect(screen.getByText('home page')).toBeInTheDocument();

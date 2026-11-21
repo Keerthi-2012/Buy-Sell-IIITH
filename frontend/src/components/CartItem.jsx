@@ -5,6 +5,23 @@ import { api, rupees } from '../utils/api';
 import { reportError } from '../utils/reportError';
 import './CartItem.css';
 
+// Small square +/- buttons; inline so the cart's full-width button styles don't stretch them.
+const stepButton = (disabled) => ({
+  width: '2rem',
+  height: '2rem',
+  padding: 0,
+  margin: 0,
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  background: '#fff',
+  color: '#111827',
+  border: '1px solid #d1d5db',
+  borderRadius: '6px',
+  cursor: disabled ? 'not-allowed' : 'pointer',
+  opacity: disabled ? 0.4 : 1,
+});
+
 // One cart row: quantity +/- buttons, the line total, and buy/remove actions.
 export const CartItem = ({ item, quantity, onQuantityChange, onRemove }) => {
   const [loading, setLoading] = useState(false);
@@ -33,16 +50,26 @@ export const CartItem = ({ item, quantity, onQuantityChange, onRemove }) => {
       <div>
         <h2>{item.name}</h2>
         <p>{item.description}</p>
-        <p>
-          Quantity:{' '}
-          <button onClick={() => onQuantityChange(item._id, quantity - 1)} disabled={loading || quantity <= 1} aria-label="Decrease quantity">
+        <p style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+          Quantity:
+          <button
+            style={stepButton(loading || quantity <= 1)}
+            onClick={() => onQuantityChange(item._id, quantity - 1)}
+            disabled={loading || quantity <= 1}
+            aria-label="Decrease quantity"
+          >
             −
-          </button>{' '}
-          {quantity}{' '}
-          <button onClick={() => onQuantityChange(item._id, quantity + 1)} disabled={loading || quantity >= item.quantity} aria-label="Increase quantity">
+          </button>
+          <span>{quantity}</span>
+          <button
+            style={stepButton(loading || quantity >= item.quantity)}
+            onClick={() => onQuantityChange(item._id, quantity + 1)}
+            disabled={loading || quantity >= item.quantity}
+            aria-label="Increase quantity"
+          >
             +
           </button>
-          {item.quantity < 5 && <small> ({item.quantity} in stock)</small>}
+          {item.quantity < 5 && <small>({item.quantity} in stock)</small>}
         </p>
       </div>
       <div className='text-right'>

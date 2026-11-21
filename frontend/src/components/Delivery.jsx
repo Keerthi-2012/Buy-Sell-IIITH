@@ -59,7 +59,11 @@ const DeliveryCard = ({ order, onComplete, onCancel }) => {
         <button onClick={handleComplete} disabled={busy}>
           {busy ? 'Verifying...' : 'Complete Delivery'}
         </button>
-        <button onClick={() => onCancel(order.transactionId)} disabled={busy}>
+        <button
+          onClick={() => onCancel(order.transactionId)}
+          disabled={busy}
+          style={{ background: '#dc2626' }} // red, so it doesn't look like the green confirm button
+        >
           Cancel
         </button>
         {error && <p className="error">{error}</p>}

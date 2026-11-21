@@ -61,7 +61,7 @@ const SellItem = () => {
       <div className="page-center-wrapper">
         <div className="sell-item-container">
           <h1 className="sell-item-title">Sell an Item</h1>
-          <form onSubmit={handleSubmit} className="form-group">
+          <form onSubmit={handleSubmit} className="sell-form">
             <div>
               <label className="label">Item Name</label>
               <input

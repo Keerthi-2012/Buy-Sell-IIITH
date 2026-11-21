@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import './Main.css';
 
 // Hero banner with the tagline on the landing page.
@@ -15,6 +16,10 @@ const Main = () => {
                 <p className='main-description'>
                     Buy and sell books, electronics, hostel essentials, and more — right on campus.
                 </p>
+                <div className='main-actions'>
+                    <Link to='/browseitems' className='main-cta'>Browse items</Link>
+                    <Link to='/sellitem' className='main-cta main-cta-secondary'>Sell an item</Link>
+                </div>
             </div>
         </div>
     );

@@ -1,0 +1,69 @@
+/* Login and register share one card layout */
+.auth-page {
+  display: flex;
+  justify-content: center;
+  padding: 3rem 1rem 4rem;
+}
+
+.auth-card {
+  width: 100%;
+  max-width: 420px;
+  padding: 2rem;
+  background: var(--bs-surface);
+  border: 1px solid var(--bs-line);
+  border-radius: var(--bs-radius);
+  box-shadow: var(--bs-shadow-lg);
+}
+.auth-card-wide { max-width: 560px; }
+
+.auth-title { font-size: 1.65rem; font-weight: 700; }
+.auth-subtitle { margin: 0.35rem 0 1.75rem; font-size: 0.95rem; color: var(--bs-muted); }
+
+/* A label stacked over its field */
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  min-width: 0;
+  margin-bottom: 1.1rem;
+}
+.form-group label { font-size: 0.85rem; font-weight: 600; color: var(--bs-ink-2); }
+
+/* Two fields side by side (first/last name, age/phone) */
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+
+.auth-submit,
+.auth-cas {
+  width: 100%;
+  height: 2.9rem;
+  border-radius: var(--bs-radius-sm);
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+.auth-submit { margin-top: 0.25rem; border: 0; background: var(--bs-brand); color: #fff; }
+.auth-submit:hover:not(:disabled) { background: var(--bs-brand-dark); }
+.auth-cas { border: 1px solid var(--bs-line-strong); background: #fff; color: var(--bs-ink); }
+.auth-cas:hover:not(:disabled) { background: #f9fafb; border-color: #9ca3af; }
+
+.auth-divider {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 1.1rem 0;
+  font-size: 0.85rem;
+  color: var(--bs-muted);
+}
+.auth-divider::before,
+.auth-divider::after { content: ''; flex: 1; height: 1px; background: var(--bs-line); }
+
+.auth-switch { margin-top: 1.5rem; text-align: center; font-size: 0.92rem; color: var(--bs-muted); }
+.auth-switch a { font-weight: 600; text-decoration: none; }
+.auth-switch a:hover { text-decoration: underline; }
+
+@media (max-width: 480px) {
+  .auth-page { padding-top: 1.5rem; }
+  .auth-card { padding: 1.5rem 1.25rem; }
+  .form-row { grid-template-columns: 1fr; gap: 0; }
+}

@@ -95,7 +95,7 @@ const ItemDetails = () => {
           <p className="item-category">Category: {item.category?.replace(/_/g, ' ')}</p>
           <p className="item-category">Condition: {item.condition}</p>
           <p className="item-price">{rupees(item.price)}</p>
-          <p className="item-category">{inStock ? `${item.quantity} available` : 'Out of stock'}</p>
+          <p className="item-stock">{inStock ? `${item.quantity} available` : 'Out of stock'}</p>
           <p className="item-description">{item.description}</p>
           <p className="item-date">
             Posted by {fullName(item.seller)} on {new Date(item.createdAt).toLocaleDateString()}

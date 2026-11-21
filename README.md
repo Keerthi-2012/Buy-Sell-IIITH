@@ -50,7 +50,7 @@ The backend tests spin up a temporary in-memory MongoDB, so they don't touch you
 3. The buyer sees a 6-digit OTP on their Orders page.
 4. When they meet, the buyer gives the seller the OTP, and the seller enters it on the Delivery page. The order completes and the item is marked sold.
 5. If plans fall through, either side can cancel a pending order and its units go back on sale. If nobody finishes or cancels an order within a week, it's released automatically.
-6. After a completed order, the buyer can rate the seller. Ratings and recent reviews show up on that seller's item pages.
+6. After a completed order, the buyer can rate the seller. Ratings and recent reviews show up on that seller's item pages. Each buyer counts once per seller, however many orders they place: rating again updates their rating instead of adding another.
 
 A few details behind that:
 
@@ -132,7 +132,7 @@ All routes live under `/api/v1`. Routes marked "login" need the session cookie.
 | `GET /order/cancelled` | login | |
 | `PATCH /order/:transactionId/complete` | login | Seller only. Body: `{ otp }` |
 | `PATCH /order/:transactionId/cancel` | login | Buyer or seller, pending orders only |
-| `POST /order/:transactionId/review` | login | Buyer only, after completion, once per order. Body: `{ rating, comment? }` |
+| `POST /order/:transactionId/review` | login | Buyer only, after completion. One rating per buyer per seller: rating again updates it (200 instead of 201). Body: `{ rating, comment? }` |
 | `GET /review/seller/:id` | public | Rating summary and recent reviews |
 | `GET /admin/orders`, `GET /admin/items` | admin | Optional `status`, `page`, `limit` |
 | `DELETE /admin/items/:id` | admin | Removes a listing and cancels its pending order |

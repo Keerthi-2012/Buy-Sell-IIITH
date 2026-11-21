@@ -14,6 +14,7 @@ const publicUser = (u) => ({
   email: u.email,
   age: u.age,
   contactNumber: u.contactNumber,
+  authProvider: u.authProvider, // "local" or "cas": decides how logging out should work
   isAdmin: isAdminUser(u),
   profileComplete: isProfileComplete(u),
 });

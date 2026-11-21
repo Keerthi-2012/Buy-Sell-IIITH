@@ -6,6 +6,7 @@ import { createBrowserRouter, RouterProvider, Outlet } from 'react-router-dom';
 import store from './redux/store';
 import { setUser, logout, sessionChecked } from './redux/authslice';
 import { api } from './utils/api';
+import { useTabSync } from './utils/useTabSync';
 
 import Navbar from './components/shared/Navbar';
 import ProtectedRoute from './components/shared/ProtectedRoute';
@@ -69,6 +70,7 @@ const appRouter = createBrowserRouter([
 // Confirms the cookie session with the server once on load.
 const AppWrapper = () => {
   const dispatch = useDispatch();
+  useTabSync(); // keep every open tab in step with the shared login
 
   useEffect(() => {
     api

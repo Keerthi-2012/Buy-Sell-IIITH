@@ -1,85 +1,28 @@
-/* ItemUpdate.css */
-
-body {
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  background-color: #f5f7fa;
-  margin: 0;
-  padding: 0;
-}
-
 .update-item-container {
-  max-width: 600px;
-  margin: 100px auto;
-  background: #ffffff;
-  padding: 30px 32px; /* More horizontal padding */
-  border-radius: 16px;
-  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.08);
+  max-width: 560px;
+  margin: 2rem auto 3rem;
+  padding: 2rem;
+  background: var(--bs-surface);
+  border: 1px solid var(--bs-line);
+  border-radius: var(--bs-radius);
+  box-shadow: var(--bs-shadow);
 }
+.update-item-container h2 { margin-bottom: 1.25rem; font-size: 1.5rem; font-weight: 700; }
+.update-item-container .error-message { margin-bottom: 1rem; }
 
-.update-item-container h2 {
-  text-align: center;
-  font-size: 26px;
-  color: #222;
-  margin-bottom: 30px;
-}
-
-form label {
-  display: block;
-  margin-bottom: 20px;
-  color: #333;
-  font-weight: 500;
-  font-size: 15px;
-}
-
-form input[type="text"],
-form input[type="number"],
-form textarea {
-  display: block;
-  width: 100%;
-  margin-top: 8px;
-  padding: 12px 14px;
-  border: 1px solid #ccc;
-  border-radius: 10px;
-  font-size: 15px;
-  background-color: #f9f9f9;
-  transition: border 0.2s ease-in-out;
-}
-
-form input:focus,
-form textarea:focus {
-  border-color: #007bff;
-  outline: none;
-  background-color: #fff;
-}
-
-form textarea {
-  resize: vertical;
-  min-height: 120px;
-}
-
-.button.button-update-item {
-  width: 100%;
-  padding: 14px;
-  font-size: 16px;
-  background-color: #6d28d9;
-  border: none;
-  border-radius: 10px;
-  color: white;
+.update-item-container form { display: flex; flex-direction: column; gap: 1.1rem; }
+.update-item-container label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  font-size: 0.85rem;
   font-weight: 600;
-  cursor: pointer;
-  margin-top: 30px;
-  transition: background-color 0.3s ease;
+  color: var(--bs-ink-2);
 }
+/* The save button is the main action here, so it uses the solid brand colour */
+.update-item-container .button-update-item { width: 100%; background: var(--bs-brand); color: #fff; }
+.update-item-container .button-update-item:hover { background: var(--bs-brand-dark); }
 
-.button.button-update-item:hover {
-  background-color: #111827;
-}
-
-.error-message {
-  background-color: #ffe0e0;
-  color: #c00;
-  padding: 12px;
-  margin-bottom: 20px;
-  border-left: 5px solid #c00;
-  border-radius: 8px;
+@media (max-width: 640px) {
+  .update-item-container { margin: 1rem; padding: 1.25rem; }
 }

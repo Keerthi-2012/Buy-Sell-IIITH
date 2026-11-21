@@ -39,7 +39,7 @@ export const loginBody = z.object({
 
 export const updateProfileBody = z.object({
   firstName: name,
-  lastName: name,
+  lastName: z.string().trim().max(50), // may be empty: CAS roll-number accounts have no surname
   age,
   contactNumber,
 });
@@ -83,7 +83,7 @@ export const updateItemBody = z
 
 // Browse filters; page defaults to 1 and limit to 24 (max 100).
 export const listItemsQuery = z.object({
-  search: optional(z.string().trim().max(100)),
+  search: optional(z.string().trim().max(100).transform((s) => s.replaceAll('\u0000', ''))), // MongoDB rejects NUL bytes in a regex
   category: optional(category),
   condition: optional(condition),
   minPrice: optional(z.coerce.number().min(0)),

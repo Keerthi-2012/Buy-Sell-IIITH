@@ -3,6 +3,9 @@ import toast from 'react-hot-toast';
 import { api, errorMessage, fullName, rupees } from '../utils/api';
 import './Orders.css'; // reuses the tab and card styles from the orders page
 
+// Rows and paging shown before (or between) responses.
+const EMPTY = { orders: [], items: [], pages: 1, total: 0 };
+
 const STATUS_OPTIONS = {
   orders: ['pending', 'completed', 'cancelled'],
   items: ['available', 'reserved', 'sold'],
@@ -13,14 +16,14 @@ const Admin = () => {
   const [tab, setTab] = useState('orders');
   const [status, setStatus] = useState('');
   const [page, setPage] = useState(1);
-  const [data, setData] = useState({ orders: [], items: [], pages: 1, total: 0 });
+  const [data, setData] = useState(EMPTY);
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
       const res = await api.get(`/admin/${tab}`, { params: { status, page } });
-      setData(res.data);
+      setData({ ...EMPTY, ...res.data }); // each endpoint returns only its own list
     } catch (err) {
       toast.error(errorMessage(err, 'Could not load admin data'));
     } finally {
@@ -32,11 +35,13 @@ const Admin = () => {
     load();
   }, [load]);
 
-  // Switching tab changes what the status filter means, so reset it and go back to page 1.
+  // Switching tab changes what the status filter means, so reset it, drop the old rows and go back to page 1.
   const switchTab = (next) => {
     setTab(next);
     setStatus('');
     setPage(1);
+    setData(EMPTY);
+    setLoading(true);
   };
 
   const removeItem = async (item) => {
@@ -93,7 +98,8 @@ const Admin = () => {
             <div key={o._id} className="order-card">
               <h2>{o.item?.name ?? o.itemName}</h2>
               <p>
-                {rupees(o.amount)}{o.quantity > 1 ? ` (${o.quantity} units)` : ''} · {o.status}
+                {rupees(o.amount)}{o.quantity > 1 ? ` (${o.quantity} units)` : ''}{' '}
+                <span className={`badge badge-${o.status}`}>{o.status}</span>
                 {o.cancelReason ? ` (${o.cancelReason})` : ''}
               </p>
               <p>Buyer: {fullName(o.buyer)} ({o.buyer?.email})</p>
@@ -106,7 +112,8 @@ const Admin = () => {
             <div key={i._id} className="order-card">
               <h2>{i.name}</h2>
               <p>
-                {rupees(i.price)} · {i.quantity} in stock · {i.status} · {i.category?.replace(/_/g, ' ')}
+                {rupees(i.price)} · {i.quantity} in stock · {i.category?.replace(/_/g, ' ')}{' '}
+                <span className={`badge badge-${i.status}`}>{i.status}</span>
               </p>
               <p>Seller: {fullName(i.seller)} ({i.seller?.email})</p>
               <button className="cancel-btn" onClick={() => removeItem(i)}>

@@ -55,10 +55,10 @@ export const completeOrder = async (req, res) => {
   );
 };
 
-// POST /order/:transactionId/review  { rating, comment? }  -- buyer rates the seller.
+// POST /order/:transactionId/review  { rating, comment? }  -- buyer rates (or re-rates) the seller.
 export const createReview = async (req, res) => {
-  const review = await reviews.createReview(req.user._id, req.valid.params.transactionId, req.valid.body);
-  res.status(201).json(review);
+  const { review, created } = await reviews.createReview(req.user._id, req.valid.params.transactionId, req.valid.body);
+  res.status(created ? 201 : 200).json(review); // 200 when it updated an existing rating
 };
 
 export const cancelOrder = async (req, res) => {

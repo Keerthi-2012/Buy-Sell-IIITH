@@ -87,7 +87,9 @@ test("login works with cookie; wrong password 401; profile requires auth", async
   assert.equal((await agent.post("/api/v1/user/login").send({ email, password: "nope1234" })).status, 401);
   const ok = await agent.post("/api/v1/user/login").send({ email: email.toUpperCase(), password: "password123" });
   assert.equal(ok.status, 200);
-  assert.equal((await agent.get("/api/v1/user/profile")).status, 200);
+  const profile = await agent.get("/api/v1/user/profile");
+  assert.equal(profile.status, 200);
+  assert.equal(profile.body.user.authProvider, "local");
   assert.equal((await request(app).get("/api/v1/user/profile")).status, 401);
 });
 
@@ -306,6 +308,41 @@ test("remove from cart", async () => {
   const res = await buyer.agent.post("/api/v1/cart/remove").send({ itemId: item._id });
   assert.equal(res.status, 200);
   assert.equal(res.body.cart.items.length, 0);
+});
+
+test("hostile input gets a clean response, never a 500", async () => {
+  // a NUL byte used to crash MongoDB's regex and surface as "Internal server error"
+  const nul = await request(app).get("/api/v1/item").query("search=la%00mp");
+  assert.equal(nul.status, 200);
+
+  // a body past the 100KB limit is the client's mistake: 413, not a server error
+  const big = await request(app).post("/api/v1/user/login").send({ email: "a@b.co", password: "x".repeat(200_000) });
+  assert.equal(big.status, 413);
+  assert.match(big.body.message, /too large/i);
+
+  // operators smuggled into query strings and bodies are rejected, not passed to MongoDB
+  assert.equal((await request(app).get("/api/v1/item").query("search[$ne]=x")).status, 400);
+  const inject = await request(app).post("/api/v1/user/login").send({ email: { $ne: null }, password: "x" });
+  assert.equal(inject.status, 400);
+
+  // extra fields on registration can't make an account admin or CAS
+  const reg = await request(app).post("/api/v1/user/register").send({
+    firstName: "Evil",
+    lastName: "Admin",
+    email: "evil-admin@students.iiit.ac.in",
+    age: 20,
+    contactNumber: "9876543210",
+    password: "password123",
+    isAdmin: true,
+    authProvider: "cas",
+  });
+  assert.equal(reg.status, 201);
+  assert.equal(reg.body.user.isAdmin, false);
+  assert.equal(
+    (await request(app).post("/api/v1/user/login").send({ email: "evil-admin@students.iiit.ac.in", password: "password123" })).status,
+    200,
+    "the account must have stayed a normal password account"
+  );
 });
 
 test("malformed input returns 400, not 500", async () => {
